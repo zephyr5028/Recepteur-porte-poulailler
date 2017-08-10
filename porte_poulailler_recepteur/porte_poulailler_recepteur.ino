@@ -52,23 +52,23 @@ unsigned int memoireLibre = 0; // variable pour calcul de la memoire libre
 volatile int f_wdt = 1; // flag watchdog
 byte tempsWatchdog = WATCHDOG_BOUCLES ; // boucle temps du chien de garde
 boolean reglage = false; // menu=false ou reglage=true
-#define BUZZER true //positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
+#define BUZZER false //positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
 #define BUZZER_PIN 7 // broche du buzzer
 PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools et power
 
 /** radio 433MHz */
-#include "Radio.h"
-#define RADIO_EMISSION  true  // positionner radio pour l'utiliser (true) ou pas
-#define PIN_RADIO_EMISSION  10  // pin D10 emetteur radio
-#define RADIO_TRANSMISSION_VITESSE  600 //initialisation de la bibliothèque avec la vitesse (vitesse_bps)
-#define PIN_RADIO_EMISSION_SWITCH A2 // broche A2 en entree digitale pour le switch emission on/off
-Radio radio(PIN_RADIO_EMISSION, PIN_RADIO_EMISSION_SWITCH, RADIO_TRANSMISSION_VITESSE, VW_MAX_MESSAGE_LEN, RADIO_EMISSION, DEBUG ); // classe Radio
+// #include "Radio.h"
+// #define RADIO_EMISSION  true  // positionner radio pour l'utiliser (true) ou pas
+// #define PIN_RADIO_EMISSION  10  // pin D10 emetteur radio
+// #define RADIO_TRANSMISSION_VITESSE  600 //initialisation de la bibliothèque avec la vitesse (vitesse_bps)
+// #define PIN_RADIO_EMISSION_SWITCH A2 // broche A2 en entree digitale pour le switch emission on/off
+// Radio radio(PIN_RADIO_EMISSION, PIN_RADIO_EMISSION_SWITCH, RADIO_TRANSMISSION_VITESSE, VW_MAX_MESSAGE_LEN, RADIO_EMISSION, DEBUG ); // classe Radio
 
 /** led broche 13 */
 #define LED_PIN 13
 
 /** servo - montée et descente de la porte */
-#include "ServoMoteur.h"
+ #include "ServoMoteur.h"
 #define SERVO_TEST false // pour utiliser ou non le test du servomoteur
 #define PIN_SERVO_CDE 8 // pin D8 cde du servo
 #define PIN_SERVO_RELAIS 4 // pin D4 relais du servo
@@ -78,7 +78,7 @@ Radio radio(PIN_RADIO_EMISSION, PIN_RADIO_EMISSION_SWITCH, RADIO_TRANSMISSION_VI
 #define SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT   160  // vitesse réduite d'ouverture ou fermeture ( 1500 +/- 100)
 bool reduit = false; // vitesse du servo, normal ou reduit(false)
 // pulse stop, ouverture/fermeture , reduit et debug si nécessaire
-ServoMoteur monServo(PIN_SERVO_CDE, PIN_SERVO_RELAIS, PIN_SECURITE_OUVERTURE, SERVO_PULSE_STOP, SERVO_PULSE_OUVERTURE_FERMETURE, SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT, DEBUG);
+ ServoMoteur monServo(PIN_SERVO_CDE, PIN_SERVO_RELAIS, PIN_SECURITE_OUVERTURE, SERVO_PULSE_STOP, SERVO_PULSE_OUVERTURE_FERMETURE, SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT, DEBUG);
 
 /** Accus */
 #include "Accus.h"
@@ -93,7 +93,7 @@ Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT, DE
 Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT, DEBUG );
 
 /** encodeur rotatif */
-#include "JlmRotaryEncoder.h"
+ #include "JlmRotaryEncoder.h"
 #define SECURITE_TEMPS_FERMETURE  300 // utilisation du temps de descente pour la sécurité =  SECURITE_TEMPS_FERMETURE * les pas du codeur rotatif
 #define SECURITE_TEMPS_OUVERTURE  300 // utilisation du temps de monté pour la sécurité =  SECURITE_TEMPS_OUVERTURE * les pas du codeur rotatif
 #define ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION 100 // initialisation de la position de l'encodeur rotatif avec le contact reed
@@ -103,7 +103,7 @@ Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT, DE
 #define ENCODER_PIN_A   2   // A
 #define ENCODER_PIN_B   11   // B
 // classe encodeur rotatif KY040
-JlmRotaryEncoder rotary(ENCODER_PIN_A, ENCODER_PIN_B, ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE, ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION); // clearButton si besoin
+ JlmRotaryEncoder rotary(ENCODER_PIN_A, ENCODER_PIN_B, ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE, ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION); // clearButton si besoin
 volatile bool interruptEncodeur = false; // valider la prise en compte de l'interruption
 volatile unsigned long debutTempsEncodeur = 0; // utilisation de millis()
 int tempoEncodeur = 5; // tempo pour éviter les rebonds de l'encodeur 5ms
@@ -239,14 +239,14 @@ void displayDate() {
       semaine[i - j] = pgm_read_byte(listeDayWeek + i);
     }
     mydisp.affichageDateHeure(semaine, tm.Day, tm.Month, tm.Year);
-  } else   if (radio.get_m_radio()) {
+  }/* else   if (radio.get_m_radio()) {
     int timeDate = rtc.lectureRegistreEtConversion (RTC_DATE); // date
     int timeMonth = rtc.lectureRegistreEtConversion( RTC_MONTH ) ; // mois
     int timeYear = rtc.lectureRegistreEtConversion(RTC_YEAR) ; // year
     radio.envoiUnsignedInt(timeDate,  boitierOuvert, ((char *)"/"));// envoi message radio
     radio.envoiUnsignedInt(timeMonth,  boitierOuvert, ((char *)"/"));// envoi message radio
     radio.envoiUnsignedInt(timeYear,  boitierOuvert, ((char *)";"));// envoi message radio
-  }
+  }*/
 }
 
 ///-----routine display Time-----
@@ -254,14 +254,14 @@ void displayTime () {
   if ( boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     mydisp.affichageDateHeure("H", tm.Hour, tm.Minute, tm.Second);
-  } else   if (radio.get_m_radio()) {
+  }/* else   if (radio.get_m_radio()) {
     int timeHour = rtc.lectureRegistreEtConversion (RTC_HOURS, 0x3f); // heure
     int timeMinute = rtc.lectureRegistreEtConversion( RTC_MINUTES ) ; // minutes
     int timeSeconde = rtc.lectureRegistreEtConversion(RTC_SECONDS) ; // secondes
     radio.envoiUnsignedInt(timeHour,  boitierOuvert, ((char *)":"));// envoi message radio
     radio.envoiUnsignedInt(timeMinute,  boitierOuvert, ((char *)":"));// envoi message radio
     radio.envoiUnsignedInt(timeSeconde,  boitierOuvert, ((char *)";"));// envoi message radio
-  }
+  }*/
 }
 
 ///----routine door open time-----
@@ -289,7 +289,7 @@ void affiPulsePlusCptRoue() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     mydisp.affichageServo(pulse, compteRoueCodeuse - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne);
-  } else   if (radio.get_m_radio() and tempsWatchdog <= 0 ) { // eviter l'envoi à l'initialisation
+  }/* else   if (radio.get_m_radio() and tempsWatchdog <= 0 ) { // eviter l'envoi à l'initialisation
     char chaine1[VW_MAX_MESSAGE_LEN - 1] = "";
     switch (test) {
       case 1: // mise sous tension du servo pour l'ouverture de la porte
@@ -303,7 +303,7 @@ void affiPulsePlusCptRoue() {
         break;
     }
     radio.envoiMessage(chaine1);// on envoie le message ouverture / fermeture
-  }
+  }*/
 }
 
 /* afficheur */
@@ -325,9 +325,9 @@ void affiTensionBatCdes() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     mydisp.affichageVoltage(  voltage, "V",  ligne);
-  } else   if (radio.get_m_radio()) {
-    radio.envoiFloat(voltage, boitierOuvert, ((char *)"V;")); // envoi message radio tension accus}*/
-  }
+  }/* else   if (radio.get_m_radio()) {
+    radio.envoiFloat(voltage, boitierOuvert, ((char *)"V;")); // envoi message radio tension accus}
+  }*/
 }
 
 ///-------affichage tension batterie servo-moteur
@@ -338,9 +338,9 @@ void affiTensionBatServo() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     mydisp.affichageVoltage(  voltage, "V",  ligne);
-  } else   if (radio.get_m_radio()) {
+  }/* else   if (radio.get_m_radio()) {
     radio.envoiFloat(voltage, boitierOuvert, ((char *)"V;")); // envoi message radio tension accus
-  }
+  }*/
 }
 
 /* choix pour l'ouverture et la fermeture :
@@ -695,11 +695,11 @@ void read_temp(const boolean typeTemperature) {
     String texte = "";
     if (typeTemperature) texte = "C"; else texte = "F";
     mydisp.affichageVoltage(t, texte, ligne);
-  } else   if (radio.get_m_radio()) {
+  }/* else   if (radio.get_m_radio()) {
     char txt[3] = "";
     if (typeTemperature)  strcat(txt, "C;"); else strcat(txt, "F;");
     radio.envoiFloat( t, boitierOuvert, txt);
-  }
+  }*/
 }
 
 /* servomoteur :
@@ -859,11 +859,11 @@ void lumiere() {
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     mydisp.affichageLumFinCourse(lumValue, ligne, " lux", nonReglable);
-  } else   if (radio.get_m_radio())  {
+  } /*else   if (radio.get_m_radio())  {
     // radio.envoiUnsignedInt(lum.get_m_lumMatin(), boitierOuvert, ";"); // envoi message radio lumiere du matin
     //  radio.envoiUnsignedInt(lum.get_m_lumSoir(), boitierOuvert, ";"); // envoi message radio lumiere du soir
     radio.envoiUnsignedInt(lumValue, boitierOuvert, ((char *)"L;")); // envoi message radio lumiere
-  }
+  }*/
 }
 
 ///-----ouverture/fermeture par test de la lumière----
@@ -975,7 +975,7 @@ void routineGestionWatchdog() {
         digitalWrite(LED_PIN, HIGH);
         delay(10);
         digitalWrite(LED_PIN, LOW);
-
+/*
         if (batterieFaible) { // affichage si la batterie est faible
           char chaine[VW_MAX_MESSAGE_LEN - 1] = "";
           char chaine1[27]; // longueur du texte batterie faible
@@ -985,10 +985,10 @@ void routineGestionWatchdog() {
           strcat(chaine, numeroSerieBoitier);
           strcat(chaine, chaine1);
           radio.messageRadio(chaine);// on envoie le message
-        }
+        }*/
 
         // informations à afficher
-        if (radio.get_m_radio()) {
+ /*       if (radio.get_m_radio()) {
           /**
              numero du boitier; //format Nxxx
              date; // format __/__/___
@@ -1000,7 +1000,7 @@ void routineGestionWatchdog() {
              position porte; // ouv/ferm
              temps fonctionnement servo; // format _____ms
              compteur roue codeuse; //format ___P pour  pas
-          */
+          *//*
           radio.envoiTexte(boitierOuvert, ((char *)numeroSerieBoitier));// envoi en debut de message le numero de serie du boitier
           displayDate();
           displayTime();
@@ -1013,7 +1013,7 @@ void routineGestionWatchdog() {
           radio.envoiInt(rotary.get_m_compteRoueCodeuse() - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, boitierOuvert,((char *)"P;\0"));
           //radio.envoiUnsignedInt( &memoireLibre, boitierOuvert, ";\0"); // envoi message radio : memoire sram restante
           radio.chaineVide();
-        }
+        }*/
         //fonctionnement du buzzer en fonction du parametre (compteurWatchdogLumiere)
         //la routine tools.fonctionnementBuzzer ne fonctionne qu'en cas de switch radio sur off ????
         //tools.fonctionnementBuzzer(lum.get_m_compteurWatchdogLumiere(), 2000) ;
@@ -1100,7 +1100,7 @@ void setup() {
   rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
 
   attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
-  attachInterrupt(0, myInterruptINT0, RISING); // validation de l'interruption sur int0 (d2)
+//  attachInterrupt(0, myInterruptINT0, RISING); // validation de l'interruption sur int0 (d2)
 
   tools.setupPower(); // initialisation power de l'arduino
 
