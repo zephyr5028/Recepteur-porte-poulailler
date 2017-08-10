@@ -31,7 +31,7 @@ void openTime();
 void closeTime();
 
 //------affichage pulse et comptage roue codeuse------
-void affiPulsePlusCptRoue();
+//void affiPulsePlusCptRoue();
 
 /* afficheur */
 //-----retro eclairage de l'afficheur-----
@@ -49,10 +49,10 @@ void affiTensionBatServo();
      - lumiere
 */
 //------affichage du choix de l'ouverture et la fermeture------
-void affiChoixOuvFerm();
+//void affiChoixOuvFerm();
 
 //-----routine choix ouverture fermeture-----
-void choixOuvFerm ();
+//void choixOuvFerm ();
 
 /* reglage heure fermeture */
 //-----reglage de l'heure de fermeture------
@@ -83,10 +83,10 @@ void reglageTime ();
 
 /* fins de course ouverture et fermeture */
 //------affichage fin de course Fermeture-----
-void affiFinDeCourseFermeture();
+//void affiFinDeCourseFermeture();
 
 //------affichage fin de course Ouverture-------
-void affiFinDeCourseOuverture();
+//void affiFinDeCourseOuverture();
 
 //------reglage fin de course Fermeture------
 void regFinDeCourseFermeture();
@@ -110,7 +110,7 @@ void regFinDeCourseOuverture();
 
 */
 // reglage du servo plus test de la roue codeuse et du servo, à l'aide de la console
-void testServo();
+//void testServo();
 
 /* temperature */
 //-----routine lecture température sur ds3231 rtc type celsius=true ,fahrenheit=false------
@@ -121,10 +121,10 @@ void read_temp(const boolean typeTemperature);
     -descente
 */
 //------sequence ouverture de la porte------
-void ouverturePorte();
+//void ouverturePorte();
 
 //-----sequence fermeture de la porte-----
-void  fermeturePorte();
+//void  fermeturePorte();
 
 /* interruptions
   -routine interruption D2 INT0
@@ -136,7 +136,7 @@ void  fermeturePorte();
   -test fermeture boitier
 */
 //-----routine interruption D2 INT0------
-void myInterruptINT0();
+//void myInterruptINT0();
 
 //-----routine interruption D3 INT1-----
 void myInterruptINT1();
@@ -145,10 +145,10 @@ void myInterruptINT1();
 void routineInterruptionBp();
 
 //-----routine alarme 2-----
-void  routineInterrruptionAlarme2();
+//void  routineInterrruptionAlarme2();
 
 //-----routine alarme 1-----
-void  routineInterruptionAlarme1();
+//void  routineInterruptionAlarme1();
 
 //-----test ouverture boitier-----
 void routineTestOuvertureBoitier();
@@ -163,7 +163,7 @@ void  routineTestFermetureBoitier();
 void lumiere();
 
 //-----ouverture/fermeture par test de la lumière----
-void ouvFermLum();
+//void ouvFermLum();
 
 /* menu */
 //-----routine affichage menus------
