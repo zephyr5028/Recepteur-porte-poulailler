@@ -120,9 +120,10 @@ Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT_ACC
 Lumiere lum(PIN_LUMIERE, LUMIERE_MATIN , LUMIERE_SOIR, LUMIERE_HEURE_FENETRE_SOIR, LUMIERE_CONVERSION_RAPPORT, LUMIERE_BOUCLES, DEBUG ); // objet lumiere
 
 /** lumiere BH1750 **/
-#include <Wire.h>
-int BH1750address = 0x23; //i2c address
-byte buff[2] = {};
+#include "LumBH1750.h"
+#define BH1750_I2C_ADDRESS 0x23 // adresse du circuit I2C
+LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG);
+
 
 /** interruptions */
 volatile boolean interruptBp = false; // etat interruption entree 9
@@ -143,10 +144,11 @@ const byte menuLumiere = 4;
 // const byte menuChoix = 9;
 // const byte menuFinDeCourseOuverture = 10;
 // const byte menuFinDeCourseFermeture = 11;
-const byte menuTensionBatCdes = 5; // tension batterie commandes
-const byte menuTensionBatServo = 6; // tension batterie servo
+const byte menuTensionBatCdes = 6; // tension batterie commandes
+const byte menuTensionBatServo = 7; // tension batterie servo
+const byte menuLightMeter = 5; // mesure du circuit BH1750
 //const byte menuManuel = 14; // compteurs
-const byte lignesMenu = 6; // lignes du menu
+const byte lignesMenu = 7; // nombre de lignes du menu
 const byte colonnes = 16; // colonnes de l'afficheur
 const byte oldkey = -1;
 const byte sensorClavier = A1; //pin A1 pour le clavier
@@ -190,14 +192,14 @@ HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
 //const char affichageMenu[] PROGMEM = "      Date      .      Heure     . Heure Ouverture. Heure Fermeture.  Temperature   .     Lumiere    .  Lumiere matin .  Lumiere soir  . Choix Ouv/Ferm .Course ouverture.Course fermeture. Tension bat N1 . Tension bat N2 .Servo Pulse Rcod.";
-const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .     Lumiere    . Tension bat N1 . Tension bat N2 .";
+const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char ouvertureDuBoitier[] PROGMEM = "Ouverture du boitier.";
 const char fermetureDuBoitier[] PROGMEM = "Fermeture du boitier.";
 //const char aimantEnHaut[] PROGMEM = " aimant en haut .";
 
 
-#include "AA_fonctions.h" // prototypes des fonctions du programme
+//#include "AA_fonctions.h" // prototypes des fonctions du programme
 
 /* clavier */
 ///-----lecture clavier------
@@ -287,6 +289,17 @@ void displayTime () {
     mydisp.affichageDateHeure("H", rtc.get_m_alarm2Hour(), rtc.get_m_alarm2Minute(), 61);
   }
   }*/
+
+///----- affichage du circuit BH1750 Light Meter -----
+void affiLightMeter () {
+  uint16_t lux = lightMeter.readLightLevel();
+  if ( boitierOuvert) { // si le boitier est ouvert
+    byte ligne = 1;
+    bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
+    mydisp.affichageLumFinCourse(lux, ligne, " lux", nonReglable);
+  }
+
+}
 
 ///------affichage pulse et comptage roue codeuse------
 //void affiPulsePlusCptRoue() {
@@ -928,6 +941,9 @@ void deroulementMenu (byte increment) {
       case 4: //lumiere
         lumiere(); // lecture et affichage de la lumiere
         break;
+      case 5:  // mesure du circuit BH1750
+        affiLightMeter(); //
+        break;
       //     case 7: // lumiere matin
       //        affiLumMatin(); // affichage de la lumiere du matin
       //      break;
@@ -943,12 +959,13 @@ void deroulementMenu (byte increment) {
       //    case 11:  // fin de course ouverture
       //       affiFinDeCourseFermeture(); // fin de course Haut
       //      break;
-      case 5:  // tension batterie commandes
+      case 6:  // tension batterie commandes
         affiTensionBatCdes(); //
         break;
-      case 6:  // tension batterie servo
+      case 7:  // tension batterie servo
         affiTensionBatServo(); //
         break;
+
         //     case 14:  // commande manuelle
         //       affiPulsePlusCptRoue(); // affichage pulse et comptage roue codeuse
         //     break;
@@ -1041,9 +1058,9 @@ void deroulementMenu (byte increment) {
    }*/
 // }
 //}
-
-///----- ,lecture BH1750 -----
-int BH1750_Read(int address) {
+/*
+  ///----- ,lecture BH1750 -----
+  int BH1750_Read(int address) {
   int i = 0;
   Wire.beginTransmission(address);
   Wire.requestFrom(address, 2);
@@ -1053,16 +1070,16 @@ int BH1750_Read(int address) {
   }
   Wire.endTransmission();
   return i;
-}
+  }
 
-///---- routine BH1750 -----
-void BH1750_Init(int address)
-{
+  ///---- routine BH1750 -----
+  void BH1750_Init(int address)
+  {
   Wire.beginTransmission(address);
   Wire.write(0x10);//1lx reolution 120ms
   Wire.endTransmission();
-}
-
+  }
+*/
 ///-----routine affichage au demarrage-----
 void affichageDemarrage (byte colonne) {
   char temp[16] = {0};
@@ -1151,8 +1168,30 @@ void setup() {
         rotary.set_m_compteRoueCodeuse(ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION);
       }
     }*/
-  BH1750_Init(BH1750address);
 
+  //initialisation BH1750 light meter
+  /*
+      BH1750 had six different measurment modes. They are divided in two groups -
+      continuous and one-time measurments. In continuous mode, sensor continuously
+      measures lightness value. And in one-time mode, sensor makes only one
+      measurment, and going to Power Down mode after this.
+      Each mode, has three different precisions:
+        - Low Resolution Mode - (4 lx precision, 16ms measurment time)
+        - High Resolution Mode - (1 lx precision, 120ms measurment time)
+        - High Resolution Mode 2 - (0.5 lx precision, 120ms measurment time)
+      By default, library use Continuous High Resolution Mode, but you can set
+      any other mode, by define it to BH1750.begin() or BH1750.configure() functions.
+      [!] Remember, if you use One-Time mode, your sensor will go to Power Down mode
+      each time, when it completes measurment and you've read it.
+      Full mode list:
+        BH1750_CONTINUOUS_LOW_RES_MODE
+        BH1750_CONTINUOUS_HIGH_RES_MODE (default)
+        BH1750_CONTINUOUS_HIGH_RES_MODE_2
+        BH1750_ONE_TIME_LOW_RES_MODE
+        BH1750_ONE_TIME_HIGH_RES_MODE
+        BH1750_ONE_TIME_HIGH_RES_MODE_2
+  */
+  lightMeter.init(BH1750_CONTINUOUS_HIGH_RES_MODE);
 }
 
 /* loop */
@@ -1213,16 +1252,6 @@ void loop() {
 
   // routineGestionWatchdog(); // routine de gestion du watchdog
 
-  int i;
-  uint16_t val = 0;
-  //  BH1750_Init(BH1750address);
-  delay(200);
-  if (2 == BH1750_Read(BH1750address))  {
-    val = ((buff[0] << 8) | buff[1]) / 1.2;
-    Serial.print(val, DEC);
-    Serial.println("lux");
-  }
-  delay(150);
 }
 
 

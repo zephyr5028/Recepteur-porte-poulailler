@@ -10,7 +10,7 @@ using namespace std;
 //constructeur avec debug
 // I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
 //LiquidCrystal_I2C lcd(0x27, 16, 2);
-LcdPCF8574::LcdPCF8574 ( char adresse, const byte taille, const byte nbLigne, const boolean debug) : LiquidCrystal_I2C (adresse, taille, nbLigne), m_debug(debug), m_decalage(0),
+LcdPCF8574::LcdPCF8574 ( char adresse, byte taille, const byte nbLigne, boolean debug) : LiquidCrystal_I2C (adresse, taille, nbLigne), m_debug(debug), m_decalage(0),
   m_ligne(0), m_deplacement(0), m_retroEclairage(1)
 {
 
@@ -139,7 +139,7 @@ void LcdPCF8574::affichageLumFinCourse( int LumFinCourse, byte ligne, String tex
   chaineLigne += LumFinCourse;
   chaineLigne += texte;
   affichageUneLigne(chaineLigne);// affichage sur lcd
-  if (siNonReglable)  cursorPosition(0, 0, "");
+  if (siNonReglable)  cursorPosition(0, 0, (char *)"");
 }
 
 ///-----affichage tensions-----
@@ -151,7 +151,7 @@ void LcdPCF8574::affichageVoltage( float voltage, String texte, byte ligne)
   chaineLigne += voltage;
   chaineLigne += texte;
   affichageUneLigne(chaineLigne);// affichage sur lcd
-  cursorPosition(0, 0, "");// decalage, ligne, texte
+  cursorPosition(0, 0, (char *)"");// decalage, ligne, texte
 }
 
 ///-----affichage choix ouverture fermeture-----
@@ -176,7 +176,7 @@ void LcdPCF8574::affichageServo(int pulse, int roueCodeuse, byte ligne)
   chaineLigne += roueCodeuse;
     chaineLigne += "pas";
   affichageUneLigne(chaineLigne);// affichage sur lcd
-  cursorPosition(0, 0, ""); // decalage, ligne, texte
+  cursorPosition(0, 0, (char *)""); // decalage, ligne, texte
 }
 
 ///-----Bonjour-----
@@ -193,7 +193,7 @@ void LcdPCF8574::bonjour(String chaine1, String chaine2) {
     delay (700);
   }
   gestionCurseur (true);
-  cursorPosition(0, 0, ""); // decalage, ligne, texte
+  cursorPosition(0, 0, (char *)""); // decalage, ligne, texte
   choixRetroEclairage(false);
 }
 

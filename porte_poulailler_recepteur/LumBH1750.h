@@ -8,29 +8,28 @@
 
 #include <Wire.h>
 #include <BH1750.h>    //https://github.com/claws/BH1750
-#define BH1750_I2C_ADDRESS 0x23 
+
 #include "Arduino.h"
 
-class LumBH1750 : public BH1750
+class LumBH1750   : public BH1750
 {
 
   public:
 
     // constructeur
-    LumBH1750();
-    LumBH1750( const boolean debug = false ); // constructeur avec debug
+
+    LumBH1750(const byte BH1750_I2C_ADDRESS = 0x23,  boolean debug = false ); // constructeur avec debug
     ~LumBH1750(); // destructeur
 
-    void init();// initialisation
- 
+    void init(uint8_t mode);// initialisation
+
 
 
   protected:
 
+    boolean m_debug ; // pour affichage console si nécessaire
 
-    const boolean m_debug ; // pour affichage console si nécessaire
-  
-   
+
 
 };
 
