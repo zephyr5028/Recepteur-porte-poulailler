@@ -128,18 +128,19 @@ volatile boolean interruptOuvBoi = false; // etat interruption entree 6
 #include "Clavier.h"
 const byte menuDate = 1;
 const byte menuHeure = 2;
-const byte menuOuverture = 3;
-const byte menuFermeture = 4;
-const byte menuTemperature = 5;
-const byte menuLumiere = 6;
-const byte menuLumiereMatin = 7;
-const byte menuLumiereSoir = 8;
-const byte menuChoix = 9;
-const byte menuFinDeCourseOuverture = 10;
-const byte menuFinDeCourseFermeture = 11;
-const byte menuTensionBatCdes = 12; // tension batterie commandes
-const byte menuTensionBatServo = 13; // tension batterie servo
-const byte menuManuel = 14; // nombre de lignes du  menu
+// const byte menuOuverture = 3;
+// const byte menuFermeture = 4;
+const byte menuTemperature = 3;
+const byte menuLumiere = 4;
+// const byte menuLumiereMatin = 7;
+// const byte menuLumiereSoir = 8;
+// const byte menuChoix = 9;
+// const byte menuFinDeCourseOuverture = 10;
+// const byte menuFinDeCourseFermeture = 11;
+const byte menuTensionBatCdes = 5; // tension batterie commandes
+const byte menuTensionBatServo = 6; // tension batterie servo
+//const byte menuManuel = 14; // compteurs
+const byte lignesMenu = 6; // lignes du menu
 const byte colonnes = 16; // colonnes de l'afficheur
 const byte oldkey = -1;
 const byte sensorClavier = A1; //pin A1 pour le clavier
@@ -150,7 +151,7 @@ byte incrementation = 0; // incrementation verticale
 boolean relache = false; // relache de la touche
 byte touche = -1; // valeur de la touche appuyee (-1 pour non appuyée)
 boolean  boitierOuvert = true; // le boitier est ouvert
-Clavier clav(menuManuel, pinBp, pinBoitier, debounce, DEBUG ); // class Clavier avec le nombre de lignes du menu
+Clavier clav(lignesMenu, pinBp, pinBoitier, debounce, DEBUG ); // class Clavier avec le nombre de lignes du menu
 
 /** LCD DigoleSerialI2C */
 #define LCD_AFFICHAGE_TEMPS_BOUCLE  1000  // temps entre deux affichages
@@ -182,7 +183,8 @@ HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
 
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
-const char affichageMenu[] PROGMEM = "      Date      .      Heure     . Heure Ouverture. Heure Fermeture.  Temperature   .     Lumiere    .  Lumiere matin .  Lumiere soir  . Choix Ouv/Ferm .Course ouverture.Course fermeture. Tension bat N1 . Tension bat N2 .Servo Pulse Rcod.";
+//const char affichageMenu[] PROGMEM = "      Date      .      Heure     . Heure Ouverture. Heure Fermeture.  Temperature   .     Lumiere    .  Lumiere matin .  Lumiere soir  . Choix Ouv/Ferm .Course ouverture.Course fermeture. Tension bat N1 . Tension bat N2 .Servo Pulse Rcod.";
+const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .     Lumiere    . Tension bat N1 . Tension bat N2 .";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char ouvertureDuBoitier[] PROGMEM = "Ouverture du boitier.";
 const char fermetureDuBoitier[] PROGMEM = "Fermeture du boitier.";
@@ -908,42 +910,42 @@ void deroulementMenu (byte increment) {
       case 2: // heure
         displayTime(); // affichage de l'heure
         break;
-      case 3: // heure ouverture
+ //     case 3: // heure ouverture
  //       openTime();  // affichage de l'heure d'ouverture de la porte
-        break;
-      case 4: // heure fermeture
+ //       break;
+  //    case 4: // heure fermeture
  //       closeTime();  // affichage de l'heure de fermeture de la porte
-        break;
-      case 5: // temperature
+ //       break;
+      case 3: // temperature
         read_temp(true); // read temperature celsius=true
         break;
-      case 6: //lumiere
+      case 4: //lumiere
         lumiere(); // lecture et affichage de la lumiere
         break;
-      case 7: // lumiere matin
+ //     case 7: // lumiere matin
 //        affiLumMatin(); // affichage de la lumiere du matin
-        break;
-      case 8: // lumiere soir
+  //      break;
+ //     case 8: // lumiere soir
  //       affiLumSoir(); // affichage de la lumiere du soir
-        break;
-      case 9: // choix Ouverture / Fermeture
+  //      break;
+  //    case 9: // choix Ouverture / Fermeture
  //       affiChoixOuvFerm(); // choix
-        break;
-      case 10:  // fin de course Fermeture
+ //       break;
+ //     case 10:  // fin de course Fermeture
  //       affiFinDeCourseOuverture();  // fin de course ouverture
-        break;
-      case 11:  // fin de course ouverture
+ //       break;
+  //    case 11:  // fin de course ouverture
  //       affiFinDeCourseFermeture(); // fin de course Haut
-        break;
-      case 12:  // tension batterie commandes
+  //      break;
+      case 5:  // tension batterie commandes
         affiTensionBatCdes(); //
         break;
-      case 13:  // tension batterie servo
+      case 6:  // tension batterie servo
         affiTensionBatServo(); //
         break;
-      case 14:  // commande manuelle
+ //     case 14:  // commande manuelle
  //       affiPulsePlusCptRoue(); // affichage pulse et comptage roue codeuse
-        break;
+   //     break;
     }
   }
 }
@@ -1069,7 +1071,7 @@ void setup() {
 
   incrementation = menuDate; // position du  menu au demarrage
   deroulementMenu (incrementation); // affichage du menu
-
+/*
   lum.set_m_ouverture( rtc.i2c_eeprom_read_byte( 0x14));// lecture du type d'ouverture @14  de l'eeprom de la carte rtc (i2c @ 0x57)
   delay(10);
   lum.set_m_fermeture( rtc.i2c_eeprom_read_byte( 0x15)); // lecture du type de fermeture @15   de l'eeprom de la carte rtc (i2c @ 0x57)
@@ -1098,7 +1100,7 @@ void setup() {
   val2 = rtc.i2c_eeprom_read_byte( 0x23); // lecture Pf fin de course bas (byte)
   delay(10);
  // rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
-
+*/
   attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
 //  attachInterrupt(0, myInterruptINT0, RISING); // validation de l'interruption sur int0 (d2)
 
