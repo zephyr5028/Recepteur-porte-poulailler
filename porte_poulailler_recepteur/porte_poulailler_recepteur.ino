@@ -93,20 +93,20 @@ Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT, DE
 Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT, DEBUG );
 
 /** encodeur rotatif */
- #include "JlmRotaryEncoder.h"
-#define SECURITE_TEMPS_FERMETURE  300 // utilisation du temps de descente pour la sécurité =  SECURITE_TEMPS_FERMETURE * les pas du codeur rotatif
-#define SECURITE_TEMPS_OUVERTURE  300 // utilisation du temps de monté pour la sécurité =  SECURITE_TEMPS_OUVERTURE * les pas du codeur rotatif
-#define ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION 100 // initialisation de la position de l'encodeur rotatif avec le contact reed
-#define ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION   190  // initialisation par defaut au demarrage de la possition de la roue codeuse 
-#define ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE  70 // initialisation par defaut au demarrage de la valeur de fin de course fermeture
+// #include "JlmRotaryEncoder.h"
+// #define SECURITE_TEMPS_FERMETURE  300 // utilisation du temps de descente pour la sécurité =  SECURITE_TEMPS_FERMETURE * les pas du codeur rotatif
+// #define SECURITE_TEMPS_OUVERTURE  300 // utilisation du temps de monté pour la sécurité =  SECURITE_TEMPS_OUVERTURE * les pas du codeur rotatif
+// #define ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION 100 // initialisation de la position de l'encodeur rotatif avec le contact reed
+// #define ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION   190  // initialisation par defaut au demarrage de la possition de la roue codeuse 
+// #define ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE  70 // initialisation par defaut au demarrage de la valeur de fin de course fermeture
 // définition des pin pour le KY040
-#define ENCODER_PIN_A   2   // A
-#define ENCODER_PIN_B   11   // B
+// #define ENCODER_PIN_A   2   // A
+// #define ENCODER_PIN_B   11   // B
 // classe encodeur rotatif KY040
- JlmRotaryEncoder rotary(ENCODER_PIN_A, ENCODER_PIN_B, ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE, ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION); // clearButton si besoin
-volatile bool interruptEncodeur = false; // valider la prise en compte de l'interruption
-volatile unsigned long debutTempsEncodeur = 0; // utilisation de millis()
-int tempoEncodeur = 5; // tempo pour éviter les rebonds de l'encodeur 5ms
+// JlmRotaryEncoder rotary(ENCODER_PIN_A, ENCODER_PIN_B, ROUE_CODEUSE_POSITION_DEFAUT_FIN_DE_COURSE_FERMETURE, ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ROUE_CODEUSE_POSITION_DEFAUT_INITIALISATION); // clearButton si besoin
+// volatile bool interruptEncodeur = false; // valider la prise en compte de l'interruption
+// volatile unsigned long debutTempsEncodeur = 0; // utilisation de millis()
+// int tempoEncodeur = 5; // tempo pour éviter les rebonds de l'encodeur 5ms
 
 /** lumiere */
 #include "Lumiere.h"
@@ -284,11 +284,11 @@ void closeTime() {
 void affiPulsePlusCptRoue() {
   int pulse = monServo.get_m_pulse();
   byte test = 0;
-  test = rotary.testCompteurRoueCodeuse (5); // tolerance de 5
-  unsigned int compteRoueCodeuse = rotary.get_m_compteRoueCodeuse();
+ // test = rotary.testCompteurRoueCodeuse (5); // tolerance de 5
+//  unsigned int compteRoueCodeuse = rotary.get_m_compteRoueCodeuse();
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
-    mydisp.affichageServo(pulse, compteRoueCodeuse - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne);
+//    mydisp.affichageServo(pulse, compteRoueCodeuse - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne);
   }/* else   if (radio.get_m_radio() and tempsWatchdog <= 0 ) { // eviter l'envoi à l'initialisation
     char chaine1[VW_MAX_MESSAGE_LEN - 1] = "";
     switch (test) {
@@ -545,24 +545,24 @@ void reglageTime () {
 /* fins de course ouverture et fermeture */
 ///------affichage fin de course Fermeture-----
 void affiFinDeCourseFermeture() {
-  unsigned int finDeCourseFermeture = rotary.get_m_finDeCourseFermeture();
+ // unsigned int finDeCourseFermeture = rotary.get_m_finDeCourseFermeture();
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
-    mydisp.affichageLumFinCourse(finDeCourseFermeture, ligne, " pas");
+ //   mydisp.affichageLumFinCourse(finDeCourseFermeture, ligne, " pas");
   }
 }
 
 ///------affichage fin de course Ouverture-------
 void affiFinDeCourseOuverture() {
-  unsigned int finDeCourseOuverture = rotary.get_m_finDeCourseOuverture();
+ // unsigned int finDeCourseOuverture = rotary.get_m_finDeCourseOuverture();
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     bool nonReglable = 0; // fin de course reglable
     String texte = " pas"; // nb de pas , 0 pour l'aimant en haut
-    if (finDeCourseOuverture ==  ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION) {
+/*    if (finDeCourseOuverture ==  ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION) {
       texte = " pas ht"; // aimant en haut
-    }
-    mydisp.affichageLumFinCourse(finDeCourseOuverture - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne, texte, nonReglable);
+    }*/
+//    mydisp.affichageLumFinCourse(finDeCourseOuverture - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne, texte, nonReglable);
     //}
   }
 }
@@ -579,8 +579,8 @@ void regFinDeCourseFermeture() {
       if (mydisp.get_m_decalage() == deplacement) {
         bool fermeture = 0;
         bool finDeCourse = 0;
-        unsigned int finDeCourseFermeture = rotary.reglageFinDeCourse(fermeture, touche);// reglage de la fin de course
-        rtc.sauvEepromChoix ( finDeCourseFermeture, fermeture, finDeCourse);// sauvegarde dans l'eeprom I2C de la valeur de fin de course fermeture @0x20 et 0x21
+ //       unsigned int finDeCourseFermeture = rotary.reglageFinDeCourse(fermeture, touche);// reglage de la fin de course
+//        rtc.sauvEepromChoix ( finDeCourseFermeture, fermeture, finDeCourse);// sauvegarde dans l'eeprom I2C de la valeur de fin de course fermeture @0x20 et 0x21
         affiFinDeCourseFermeture();
       }
     }
@@ -599,8 +599,8 @@ void regFinDeCourseOuverture() {
       if (mydisp.get_m_decalage() == deplacement) {
         bool ouverture = 1;
         bool finDeCourse = 0;
-        unsigned int finDeCourseOuverture = rotary.reglageFinDeCourse(ouverture, touche);// reglage de la fin de course
-        rtc.sauvEepromChoix ( finDeCourseOuverture, ouverture, finDeCourse);// sauvegarde dans l'eeprom I2C de la valeur de fin de course ouverture @0x22 et 0x23
+//        unsigned int finDeCourseOuverture = rotary.reglageFinDeCourse(ouverture, touche);// reglage de la fin de course
+//        rtc.sauvEepromChoix ( finDeCourseOuverture, ouverture, finDeCourse);// sauvegarde dans l'eeprom I2C de la valeur de fin de course ouverture @0x22 et 0x23
         affiFinDeCourseOuverture();
       }
     }
@@ -710,20 +710,20 @@ void read_temp(const boolean typeTemperature) {
 void ouverturePorte() {
   if (monServo.get_m_servoAction() and !monServo.get_m_ouvFerm()) {
     //Serial.println (rotary.get_m_compteRoueCodeuse());
-    if (rotary.get_m_compteRoueCodeuse() <= rotary.get_m_finDeCourseOuverture() + 5) {
+ /*   if (rotary.get_m_compteRoueCodeuse() <= rotary.get_m_finDeCourseOuverture() + 5) {
       reduit = 0;// vitesse reduite
 
       monServo.servoVitesse( reduit);
-    }
+    }*/
     // utilisation du temps de monte pour la sécurité SECURITE_TEMPS_OUVERTURE * les pas du codeur rotatif
-    if ( !digitalRead(PIN_SECURITE_OUVERTURE) or (touche == 4 and boitierOuvert) or ( ( millis() - monServo.get_m_debutTemps()) > (SECURITE_TEMPS_OUVERTURE * rotary.get_m_finDeCourseFermeture()))) {
+ /*   if ( !digitalRead(PIN_SECURITE_OUVERTURE) or (touche == 4 and boitierOuvert) or ( ( millis() - monServo.get_m_debutTemps()) > (SECURITE_TEMPS_OUVERTURE * rotary.get_m_finDeCourseFermeture()))) {
       rotary.set_m_compteRoueCodeuse (monServo.servoHorsTension(rotary.get_m_compteRoueCodeuse(), rotary.get_m_finDeCourseOuverture()));
       /*
         if (rotary.get_m_compteRoueCodeuse() < ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION) {
         rotary.set_m_compteRoueCodeuse(ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION);
         }
       */
-    }
+  /*  }*/
   }
 }
 
@@ -731,16 +731,16 @@ void ouverturePorte() {
 void  fermeturePorte() {
   if (monServo.get_m_servoAction() and monServo.get_m_ouvFerm()) {
     //Serial.println (rotary.get_m_compteRoueCodeuse());
-    if (rotary.get_m_compteRoueCodeuse() >= rotary.get_m_finDeCourseOuverture() + ( rotary.get_m_finDeCourseFermeture() - 10)) {
+/*    if (rotary.get_m_compteRoueCodeuse() >= rotary.get_m_finDeCourseOuverture() + ( rotary.get_m_finDeCourseFermeture() - 10)) {
       reduit = 0;// vitesse reduite
       monServo.servoVitesse( reduit);
-    }
+    }*/
     // utilisation du temps de descente pour la sécurité SECURITE_TEMPS_FERMETURE * les pas du codeur rotatif
     // 2000 pour 2s de delais pour débuter la fermeture sans le test du relais reed
-    if (((!digitalRead(PIN_SECURITE_OUVERTURE) and ( millis() - monServo.get_m_debutTemps()) > 2000)) or (touche == 4 and boitierOuvert) or (rotary.get_m_compteRoueCodeuse() >= rotary.get_m_finDeCourseOuverture() + rotary.get_m_finDeCourseFermeture())
+/*    if (((!digitalRead(PIN_SECURITE_OUVERTURE) and ( millis() - monServo.get_m_debutTemps()) > 2000)) or (touche == 4 and boitierOuvert) or (rotary.get_m_compteRoueCodeuse() >= rotary.get_m_finDeCourseOuverture() + rotary.get_m_finDeCourseFermeture())
         or (( millis() - monServo.get_m_debutTemps()) > (SECURITE_TEMPS_FERMETURE * rotary.get_m_finDeCourseFermeture()))) {
       rotary.set_m_compteRoueCodeuse (monServo.servoHorsTension(rotary.get_m_compteRoueCodeuse(), rotary.get_m_finDeCourseOuverture()));
-    }
+    }*/
   }
 }
 
@@ -756,10 +756,10 @@ void  fermeturePorte() {
 ///-----routine interruption D2 INT0------
 void myInterruptINT0() {
   //rotary.compteurRoueCodeuse(); // mis à jour du compteur de l'encodeur rotatif
-  if (!interruptEncodeur) {
+ /* if (!interruptEncodeur) {
     interruptEncodeur  = true; // pour prise en compte de l'it
     debutTempsEncodeur  = millis(); // pour éviter les rebonds sur le front descendant du signal
-  }
+  }*/
 }
 
 //-----routine interruption D3 INT1-----
@@ -875,7 +875,7 @@ void ouvFermLum() {
   // horaire évoluant en fonction du mois
   lum.fenetreNonDeclenchement(valHeure, valMois) ;
   //non eclenchement en fonction de la position du servo et mise à jour du compteur watchdog lumiere
-  lum.nonDeclenchementPositionServo (rotary.get_m_compteRoueCodeuse(), rotary.get_m_finDeCourseFermeture(), rotary.get_m_finDeCourseOuverture());
+//  lum.nonDeclenchementPositionServo (rotary.get_m_compteRoueCodeuse(), rotary.get_m_finDeCourseFermeture(), rotary.get_m_finDeCourseOuverture());
   byte declenchementLuminosite = lum.declenchementServoLuminosite(); // test de la luninosite et declenchement du servo
   switch (declenchementLuminosite) {
     case 1: // mise sous tension du servo pour l'ouverture de la porte
@@ -1091,13 +1091,13 @@ void setup() {
   delay(10);
   val2 = rtc.i2c_eeprom_read_byte( 0x21); // lecture Pf fin de course haut (byte)
   delay(10);
-  rotary.set_m_finDeCourseFermeture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseFermeture
+ // rotary.set_m_finDeCourseFermeture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseFermeture
 
   val1 = rtc.i2c_eeprom_read_byte( 0x22); // lecture pf fin de course bas (byte)
   delay(10);
   val2 = rtc.i2c_eeprom_read_byte( 0x23); // lecture Pf fin de course bas (byte)
   delay(10);
-  rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
+ // rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
 
   attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
 //  attachInterrupt(0, myInterruptINT0, RISING); // validation de l'interruption sur int0 (d2)
