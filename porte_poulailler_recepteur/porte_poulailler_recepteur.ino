@@ -265,7 +265,7 @@ void displayTime () {
 }
 
 ///----routine door open time-----
-void openTime() {
+/*void openTime() {
   if ( boitierOuvert) { // si le boitier est ouvert
     // affichage de l'horaire de l'alarme 1
     mydisp.affichageDateHeure("H", rtc.get_m_alarm1Hour(), rtc.get_m_alarm1Minute() , rtc.get_m_alarm1Second());
@@ -278,7 +278,7 @@ void closeTime() {
     // affichage de l'horaire de l'alarme 2 - 61 pour ne pas afficher les secondes
     mydisp.affichageDateHeure("H", rtc.get_m_alarm2Hour(), rtc.get_m_alarm2Minute(), 61);
   }
-}
+}*/
 
 ///------affichage pulse et comptage roue codeuse------
 //void affiPulsePlusCptRoue() {
@@ -348,15 +348,15 @@ void affiTensionBatServo() {
      - lumiere
 */
 ///------affichage du choix de l'ouverture et la fermeture------
-void affiChoixOuvFerm() {
+/*void affiChoixOuvFerm() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     mydisp.affichageChoix(lum.get_m_ouverture(), lum.get_m_fermeture(), ligne);
   }
-}
+}*/
 
 ///-----routine choix ouverture fermeture-----
-void choixOuvFerm () {
+/*void choixOuvFerm () {
   if (boitierOuvert) {
     byte deplacement = 7;
     if (incrementation == menuChoix) {
@@ -374,11 +374,11 @@ void choixOuvFerm () {
       }
     }
   }
-}
+}*/
 
 /* reglage heure fermeture */
 ///-----reglage de l'heure de fermeture------
-void reglageHeureFermeture() {
+/*void reglageHeureFermeture() {
   if (boitierOuvert) {
     byte deplacement = 4;
     if (incrementation == menuFermeture) {
@@ -397,11 +397,11 @@ void reglageHeureFermeture() {
       }
     }
   }
-}
+}*/
 
 /* reglage heure ouverture */
 ///-----routine de reglage de l'heure d'ouverture-----
-void reglageHeureOuverture() {
+/*void reglageHeureOuverture() {
   if (boitierOuvert) {
     byte deplacement = 4;
     if (incrementation == menuOuverture) {
@@ -424,7 +424,7 @@ void reglageHeureOuverture() {
       }
     }
   }
-}
+}*/
 
 /* reglage de la date */
 ///----routine reglage jour semaine, jour, mois, annee-----
@@ -458,16 +458,16 @@ void reglageDate () {
 
 /* reglage de la lumiere du matin */
 ///------affichage de la lumiere du matin------
-void affiLumMatin() {
+/*void affiLumMatin() {
   if (boitierOuvert) {
     unsigned int lumMatin = lum.get_m_lumMatin();
     byte ligne = 1;
     mydisp.affichageLumFinCourse(lumMatin,  ligne, " lux");
   }
-}
+}*/
 
 ///-----reglage du choix de la lumiere du matin-------
-void choixLumMatin() {
+/*void choixLumMatin() {
   if (boitierOuvert) {
     byte deplacement = 8;
     if (incrementation == menuLumiereMatin) {
@@ -484,20 +484,20 @@ void choixLumMatin() {
       }
     }
   }
-}
+}*/
 
 /* reglage de la lumiere du soir  */
 ///------affichage de la lumiere du soir-------
-void affiLumSoir() {
+/*void affiLumSoir() {
   if (boitierOuvert) {
     unsigned int lumSoir = lum.get_m_lumSoir();
     byte ligne = 1;
     mydisp.affichageLumFinCourse(lumSoir, ligne, " lux");
   }
-}
+}*/
 
 ///------reglage du choix de la lumiere du soir--------
-void choixLumSoir() {
+/*void choixLumSoir() {
   if (boitierOuvert) {
     byte deplacement = 8;
     if (incrementation == menuLumiereSoir) {
@@ -514,7 +514,7 @@ void choixLumSoir() {
       }
     }
   }
-}
+}*/
 
 /* reglage time */
 ///-----routine reglage heure , minute , seconde-----
@@ -568,7 +568,7 @@ void reglageTime () {
 //}
 
 ///------reglage fin de course Fermeture------
-void regFinDeCourseFermeture() {
+/*void regFinDeCourseFermeture() {
   if (boitierOuvert) {
     byte deplacement = 8;
     if (incrementation == menuFinDeCourseFermeture) {
@@ -585,10 +585,10 @@ void regFinDeCourseFermeture() {
       }
     }
   }
-}
+}*/
 
 ///-----regalge fin de course ouverture------
-void regFinDeCourseOuverture() {
+/*void regFinDeCourseOuverture() {
   if (boitierOuvert) {
     byte deplacement = 8;
     if (incrementation == menuFinDeCourseOuverture) {
@@ -605,7 +605,7 @@ void regFinDeCourseOuverture() {
       }
     }
   }
-}
+}*/
 
 /** Test du servo avec la console arduino
 
@@ -909,10 +909,10 @@ void deroulementMenu (byte increment) {
         displayTime(); // affichage de l'heure
         break;
       case 3: // heure ouverture
-        openTime();  // affichage de l'heure d'ouverture de la porte
+ //       openTime();  // affichage de l'heure d'ouverture de la porte
         break;
       case 4: // heure fermeture
-        closeTime();  // affichage de l'heure de fermeture de la porte
+ //       closeTime();  // affichage de l'heure de fermeture de la porte
         break;
       case 5: // temperature
         read_temp(true); // read temperature celsius=true
@@ -921,10 +921,10 @@ void deroulementMenu (byte increment) {
         lumiere(); // lecture et affichage de la lumiere
         break;
       case 7: // lumiere matin
-        affiLumMatin(); // affichage de la lumiere du matin
+//        affiLumMatin(); // affichage de la lumiere du matin
         break;
       case 8: // lumiere soir
-        affiLumSoir(); // affichage de la lumiere du soir
+ //       affiLumSoir(); // affichage de la lumiere du soir
         break;
       case 9: // choix Ouverture / Fermeture
  //       affiChoixOuvFerm(); // choix
@@ -950,23 +950,23 @@ void deroulementMenu (byte increment) {
 
 /* interruption du watchdog */
 ///----Watchdog Interrupt Service est exécité lors d'un timeout du WDT----
-ISR(WDT_vect) {
+/*ISR(WDT_vect) {
   if (f_wdt == 0) {
     f_wdt = 1; // flag
   }
-}
+}*/
 
 ///-----entree dans le mode sleep-----
-void enterSleep(void) {
+/*void enterSleep(void) {
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   sleep_mode(); //Entre dans le mode veille choisi
   // Le programme va reprendre ici après le timeout du WDT
   sleep_disable(); // La 1ère chose à faire est de désactiver le mode veille
-}
+}*/
 
 ///-----routine de gestion du watchdog-----
-void routineGestionWatchdog() {
+//void routineGestionWatchdog() {
  // if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
  /*   if ( !monServo.get_m_servoAction()) { // servo à l'arrêt
       tempsWatchdog--;
@@ -1032,7 +1032,7 @@ void routineGestionWatchdog() {
       enterSleep(); //Revenir en mode veille
     }*/
  // }
-}
+//}
 
 ///-----routine affichage au demarrage-----
 void affichageDemarrage (byte colonne) {
@@ -1133,13 +1133,13 @@ void loop() {
   //reglages
   reglageTime(); // reglages de l'heure, minute, seconde si touche fleche droite
   reglageDate(); // reglage de la date si touche fleche droite
-  reglageHeureOuverture();// reglage de l'heure d'ouverture
-  reglageHeureFermeture();// reglage de l'heure de fermeture
-  choixOuvFerm (); // choix de l'ouverture et la fermeture
-  choixLumMatin();//  reglage de la lumiere du matin
-  choixLumSoir();//  reglage de la lumiere du soir
-  regFinDeCourseFermeture(); // reglage fin de course fermeture
-  regFinDeCourseOuverture(); // reglage fin de course ouverture
+ // reglageHeureOuverture();// reglage de l'heure d'ouverture
+//  reglageHeureFermeture();// reglage de l'heure de fermeture
+ // choixOuvFerm (); // choix de l'ouverture et la fermeture
+ // choixLumMatin();//  reglage de la lumiere du matin
+//  choixLumSoir();//  reglage de la lumiere du soir
+ // regFinDeCourseFermeture(); // reglage fin de course fermeture
+//  regFinDeCourseOuverture(); // reglage fin de course ouverture
   eclairageAfficheur(); // retro eclairage de l'afficheur
 /*
   if (SERVO_TEST) {

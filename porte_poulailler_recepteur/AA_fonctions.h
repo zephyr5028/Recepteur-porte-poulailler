@@ -25,10 +25,10 @@ void displayDate();
 void displayTime ();
 
 //----routine door open time-----
-void openTime();
+//void openTime();
 
 //-----routine door close time-----
-void closeTime();
+//void closeTime();
 
 //------affichage pulse et comptage roue codeuse------
 //void affiPulsePlusCptRoue();
@@ -56,11 +56,11 @@ void affiTensionBatServo();
 
 /* reglage heure fermeture */
 //-----reglage de l'heure de fermeture------
-void reglageHeureFermeture();
+//void reglageHeureFermeture();
 
 /* reglage heure ouverture */
 //-----routine de reglage de l'heure d'ouverture-----
-void reglageHeureOuverture();
+//void reglageHeureOuverture();
 
 /* reglage de la date */
 //----routine reglage jour semaine, jour, mois, annee-----
@@ -68,14 +68,14 @@ void reglageDate ();
 
 /* reglage de la lumiere du matin */
 //------affichage de la lumiere du matin------
-void affiLumMatin();
+//void affiLumMatin();
 
 /* reglage de la lumiere du soir  */
 //------affichage de la lumiere du soir-------
-void affiLumSoir();
+//void affiLumSoir();
 
 //------reglage du choix de la lumiere du soir--------
-void choixLumSoir();
+//void choixLumSoir();
 
 /* reglage time */
 //-----routine reglage heure , minute , seconde-----
@@ -89,10 +89,10 @@ void reglageTime ();
 //void affiFinDeCourseOuverture();
 
 //------reglage fin de course Fermeture------
-void regFinDeCourseFermeture();
+//void regFinDeCourseFermeture();
 
 //-----regalge fin de course ouverture------
-void regFinDeCourseOuverture();
+//void regFinDeCourseOuverture();
 
 /* Test du servo avec la console arduino
 
@@ -171,13 +171,13 @@ void deroulementMenu (byte increment);
 
 /* interruption du watchdog */
 //----Watchdog Interrupt Service est exécité lors d'un timeout du WDT----
-ISR(WDT_vect);
+//ISR(WDT_vect);
 
 //-----entree dans le mode sleep-----
-void enterSleep(void);
+//void enterSleep(void);
 
 //-----routine de gestion du watchdog-----
-void routineGestionWatchdog();
+//void routineGestionWatchdog();
 
 //-----routine affichage au demarrage-----
 void affichageDemarrage (byte colonne);
