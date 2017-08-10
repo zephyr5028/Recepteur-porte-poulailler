@@ -121,7 +121,6 @@ Lumiere lum(PIN_LUMIERE, LUMIERE_MATIN , LUMIERE_SOIR, LUMIERE_HEURE_FENETRE_SOI
 
 /** lumiere BH1750 **/
 #include <Wire.h>
-#include <math.h>
 int BH1750address = 0x23; //i2c address
 byte buff[2] = {};
 
