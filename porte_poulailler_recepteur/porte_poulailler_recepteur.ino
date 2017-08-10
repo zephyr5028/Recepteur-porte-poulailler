@@ -283,13 +283,13 @@ void closeTime() {
 ///------affichage pulse et comptage roue codeuse------
 void affiPulsePlusCptRoue() {
  // int pulse = monServo.get_m_pulse();
-  byte test = 0;
+ // byte test = 0;
  // test = rotary.testCompteurRoueCodeuse (5); // tolerance de 5
 //  unsigned int compteRoueCodeuse = rotary.get_m_compteRoueCodeuse();
-  if ( boitierOuvert) { // si le boitier est ouvert
-    byte ligne = 1;
+  //if ( boitierOuvert) { // si le boitier est ouvert
+  //  byte ligne = 1;
 //    mydisp.affichageServo(pulse, compteRoueCodeuse - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne);
-  }/* else   if (radio.get_m_radio() and tempsWatchdog <= 0 ) { // eviter l'envoi à l'initialisation
+ /* }  else   if (radio.get_m_radio() and tempsWatchdog <= 0 ) { // eviter l'envoi à l'initialisation
     char chaine1[VW_MAX_MESSAGE_LEN - 1] = "";
     switch (test) {
       case 1: // mise sous tension du servo pour l'ouverture de la porte
@@ -546,25 +546,25 @@ void reglageTime () {
 ///------affichage fin de course Fermeture-----
 void affiFinDeCourseFermeture() {
  // unsigned int finDeCourseFermeture = rotary.get_m_finDeCourseFermeture();
-  if ( boitierOuvert) { // si le boitier est ouvert
-    byte ligne = 1;
+ // if ( boitierOuvert) { // si le boitier est ouvert
+//    byte ligne = 1;
  //   mydisp.affichageLumFinCourse(finDeCourseFermeture, ligne, " pas");
-  }
+ // }
 }
 
 ///------affichage fin de course Ouverture-------
 void affiFinDeCourseOuverture() {
  // unsigned int finDeCourseOuverture = rotary.get_m_finDeCourseOuverture();
-  if ( boitierOuvert) { // si le boitier est ouvert
-    byte ligne = 1;
-    bool nonReglable = 0; // fin de course reglable
-    String texte = " pas"; // nb de pas , 0 pour l'aimant en haut
+//  if ( boitierOuvert) { // si le boitier est ouvert
+ //   byte ligne = 1;
+  //  bool nonReglable = 0; // fin de course reglable
+ //   String texte = " pas"; // nb de pas , 0 pour l'aimant en haut
 /*    if (finDeCourseOuverture ==  ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION) {
       texte = " pas ht"; // aimant en haut
     }*/
 //    mydisp.affichageLumFinCourse(finDeCourseOuverture - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, ligne, texte, nonReglable);
     //}
-  }
+ // }
 }
 
 ///------reglage fin de course Fermeture------
@@ -783,24 +783,24 @@ void routineInterruptionBp() {
 
 ///-----routine alarme 2-----
 void  routineInterrruptionAlarme2() {
-  if ( RTC.alarm(alarm_2) and interruptRTC ) {    // has Alarm2 (fermeture) triggered?  alarme rtc
+ // if ( RTC.alarm(alarm_2) and interruptRTC ) {    // has Alarm2 (fermeture) triggered?  alarme rtc
     // mise sous tension du servo pour la fermeture de la porte
  //   monServo.set_m_ouvFerm(true); // fermeture
  //   reduit = 1;// vitesse normale
  //   monServo.servoOuvFerm(batterieFaible, reduit);
-    interruptRTC = false; // autorisation de la prise en compte de l'IT
-  }
+ //   interruptRTC = false; // autorisation de la prise en compte de l'IT
+ // }
 }
 
 ///-----routine alarme 1-----
 void  routineInterruptionAlarme1() {
-  if ( RTC.alarm(alarm_1) and interruptRTC ) {    // has Alarm1 (ouverture) triggered?  alarme rtc
+ // if ( RTC.alarm(alarm_1) and interruptRTC ) {    // has Alarm1 (ouverture) triggered?  alarme rtc
     // mise sous tension du servo pour l'ouverture de la porte
  //   monServo.set_m_ouvFerm(false); // ouverture
  //   reduit = 1;// vitesse normale
  //   monServo.servoOuvFerm(batterieFaible, reduit);
-    interruptRTC = false; // autorisation de la prise en compte de l'IT
-  }
+//    interruptRTC = false; // autorisation de la prise en compte de l'IT
+ // }
 }
 
 ///-----test ouverture boitier-----
@@ -868,7 +868,7 @@ void lumiere() {
 
 ///-----ouverture/fermeture par test de la lumière----
 void ouvFermLum() {
-  byte  valHeure = rtc.lectureRegistreEtConversion(RTC_HOURS & 0x3f); // lecture de l'heure
+/*  byte  valHeure = rtc.lectureRegistreEtConversion(RTC_HOURS & 0x3f); // lecture de l'heure
   byte  valMois = rtc.lectureRegistreEtConversion(RTC_MONTH); // lecture du mois
   lum.testLuminosite(); // test de la luminosite pour mise à jour du compteur watchdog lumiere
   //fenetre de non declenchement pour ne pas declencher la fermeture avant 17h00 et l'ouverture après 17h00 et mise à jour du compteur watchdog lumiere
@@ -888,7 +888,7 @@ void ouvFermLum() {
    //   reduit = 1;// vitesse normale
   //    monServo.servoOuvFerm(batterieFaible, reduit);
       break;
-  }
+  }*/
 }
 
 /* menu */
@@ -967,7 +967,7 @@ void enterSleep(void) {
 
 ///-----routine de gestion du watchdog-----
 void routineGestionWatchdog() {
-  if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
+ // if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
  /*   if ( !monServo.get_m_servoAction()) { // servo à l'arrêt
       tempsWatchdog--;
       if (tempsWatchdog <= 0) {
@@ -1031,7 +1031,7 @@ void routineGestionWatchdog() {
       f_wdt = 0;
       enterSleep(); //Revenir en mode veille
     }*/
-  }
+ // }
 }
 
 ///-----routine affichage au demarrage-----
