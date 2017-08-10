@@ -68,17 +68,17 @@ PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools et power
 #define LED_PIN 13
 
 /** servo - montée et descente de la porte */
- #include "ServoMoteur.h"
-#define SERVO_TEST false // pour utiliser ou non le test du servomoteur
-#define PIN_SERVO_CDE 8 // pin D8 cde du servo
-#define PIN_SERVO_RELAIS 4 // pin D4 relais du servo
-#define PIN_SECURITE_OUVERTURE 12 // pin D12 pour l'ouverture de porte
-#define SERVO_PULSE_STOP 1450 // value should usually be 750 to 2200 (1500 = stop), a tester pour chaque servo
-#define SERVO_PULSE_OUVERTURE_FERMETURE   220  // vitesse d'ouverture ou fermeture ( 1500 +/- 140)
-#define SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT   160  // vitesse réduite d'ouverture ou fermeture ( 1500 +/- 100)
-bool reduit = false; // vitesse du servo, normal ou reduit(false)
+// #include "ServoMoteur.h"
+// #define SERVO_TEST false // pour utiliser ou non le test du servomoteur
+// #define PIN_SERVO_CDE 8 // pin D8 cde du servo
+// #define PIN_SERVO_RELAIS 4 // pin D4 relais du servo
+// #define PIN_SECURITE_OUVERTURE 12 // pin D12 pour l'ouverture de porte
+// #define SERVO_PULSE_STOP 1450 // value should usually be 750 to 2200 (1500 = stop), a tester pour chaque servo
+// #define SERVO_PULSE_OUVERTURE_FERMETURE   220  // vitesse d'ouverture ou fermeture ( 1500 +/- 140)
+// #define SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT   160  // vitesse réduite d'ouverture ou fermeture ( 1500 +/- 100)
+// bool reduit = false; // vitesse du servo, normal ou reduit(false)
 // pulse stop, ouverture/fermeture , reduit et debug si nécessaire
- ServoMoteur monServo(PIN_SERVO_CDE, PIN_SERVO_RELAIS, PIN_SECURITE_OUVERTURE, SERVO_PULSE_STOP, SERVO_PULSE_OUVERTURE_FERMETURE, SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT, DEBUG);
+// ServoMoteur monServo(PIN_SERVO_CDE, PIN_SERVO_RELAIS, PIN_SECURITE_OUVERTURE, SERVO_PULSE_STOP, SERVO_PULSE_OUVERTURE_FERMETURE, SERVO_PULSE_OUVERTURE_FERMETURE_REDUIT, DEBUG);
 
 /** Accus */
 #include "Accus.h"
@@ -207,7 +207,7 @@ void  lectureClavier() {
 
 ///---- temporisation pour l'affichage: affichage du menu lorsque temps est > boucleTemps-----
 void temporisationAffichage(const int boucleTemps) {
-  if (  temps > boucleTemps and touche != -1 and !monServo.get_m_servoAction()) {
+  if (  temps > boucleTemps and touche != -1 /*and !monServo.get_m_servoAction()*/) {
     deroulementMenu (incrementation); // affichage du menu en fonction de incrementation
     temps = 0;
   } else {
@@ -282,7 +282,7 @@ void closeTime() {
 
 ///------affichage pulse et comptage roue codeuse------
 void affiPulsePlusCptRoue() {
-  int pulse = monServo.get_m_pulse();
+ // int pulse = monServo.get_m_pulse();
   byte test = 0;
  // test = rotary.testCompteurRoueCodeuse (5); // tolerance de 5
 //  unsigned int compteRoueCodeuse = rotary.get_m_compteRoueCodeuse();
@@ -623,7 +623,7 @@ void regFinDeCourseOuverture() {
 
 */
 /// reglage du servo plus test de la roue codeuse et du servo, à l'aide de la console
-void testServo() {
+void testServo() {/*
   if (SERVO_TEST) {
     int pulse = monServo.get_m_pulse();
     //des données sur la liaison série : (lorsque l'on appuie sur a, q, z, s, e, d )
@@ -683,7 +683,7 @@ void testServo() {
       Serial.print(pulse);
       Serial.println(F(" ms"));
     }
-  }
+  }*/
 }
 
 /* temperature */
@@ -708,7 +708,7 @@ void read_temp(const boolean typeTemperature) {
 */
 ///------sequence ouverture de la porte------
 void ouverturePorte() {
-  if (monServo.get_m_servoAction() and !monServo.get_m_ouvFerm()) {
+/*  if (monServo.get_m_servoAction() and !monServo.get_m_ouvFerm()) {
     //Serial.println (rotary.get_m_compteRoueCodeuse());
  /*   if (rotary.get_m_compteRoueCodeuse() <= rotary.get_m_finDeCourseOuverture() + 5) {
       reduit = 0;// vitesse reduite
@@ -724,12 +724,12 @@ void ouverturePorte() {
         }
       */
   /*  }*/
-  }
+ /* }*/
 }
 
 ///-----sequence fermeture de la porte-----
 void  fermeturePorte() {
-  if (monServo.get_m_servoAction() and monServo.get_m_ouvFerm()) {
+/*  if (monServo.get_m_servoAction() and monServo.get_m_ouvFerm()) {
     //Serial.println (rotary.get_m_compteRoueCodeuse());
 /*    if (rotary.get_m_compteRoueCodeuse() >= rotary.get_m_finDeCourseOuverture() + ( rotary.get_m_finDeCourseFermeture() - 10)) {
       reduit = 0;// vitesse reduite
@@ -741,7 +741,7 @@ void  fermeturePorte() {
         or (( millis() - monServo.get_m_debutTemps()) > (SECURITE_TEMPS_FERMETURE * rotary.get_m_finDeCourseFermeture()))) {
       rotary.set_m_compteRoueCodeuse (monServo.servoHorsTension(rotary.get_m_compteRoueCodeuse(), rotary.get_m_finDeCourseOuverture()));
     }*/
-  }
+ /* }*/
 }
 
 /** interruptions
@@ -773,9 +773,9 @@ void myInterruptINT1() {
 void routineInterruptionBp() {
   if (interruptBp) { // test de l'appui sur bouton bp
     if (clav.testToucheBp ()) { //debounce pour le bp
-      if (monServo.get_m_ouvFerm())  monServo.set_m_ouvFerm(false); else  monServo.set_m_ouvFerm(true);
-      reduit = 1;// vitesse normale
-      monServo.servoOuvFerm(batterieFaible, reduit);
+  //    if (monServo.get_m_ouvFerm())  monServo.set_m_ouvFerm(false); else  monServo.set_m_ouvFerm(true);
+ //     reduit = 1;// vitesse normale
+ //     monServo.servoOuvFerm(batterieFaible, reduit);
     }
     clav.testRelacheBp(interruptBp);// test du relache du bp
   }
@@ -785,9 +785,9 @@ void routineInterruptionBp() {
 void  routineInterrruptionAlarme2() {
   if ( RTC.alarm(alarm_2) and interruptRTC ) {    // has Alarm2 (fermeture) triggered?  alarme rtc
     // mise sous tension du servo pour la fermeture de la porte
-    monServo.set_m_ouvFerm(true); // fermeture
-    reduit = 1;// vitesse normale
-    monServo.servoOuvFerm(batterieFaible, reduit);
+ //   monServo.set_m_ouvFerm(true); // fermeture
+ //   reduit = 1;// vitesse normale
+ //   monServo.servoOuvFerm(batterieFaible, reduit);
     interruptRTC = false; // autorisation de la prise en compte de l'IT
   }
 }
@@ -796,9 +796,9 @@ void  routineInterrruptionAlarme2() {
 void  routineInterruptionAlarme1() {
   if ( RTC.alarm(alarm_1) and interruptRTC ) {    // has Alarm1 (ouverture) triggered?  alarme rtc
     // mise sous tension du servo pour l'ouverture de la porte
-    monServo.set_m_ouvFerm(false); // ouverture
-    reduit = 1;// vitesse normale
-    monServo.servoOuvFerm(batterieFaible, reduit);
+ //   monServo.set_m_ouvFerm(false); // ouverture
+ //   reduit = 1;// vitesse normale
+ //   monServo.servoOuvFerm(batterieFaible, reduit);
     interruptRTC = false; // autorisation de la prise en compte de l'IT
   }
 }
@@ -879,14 +879,14 @@ void ouvFermLum() {
   byte declenchementLuminosite = lum.declenchementServoLuminosite(); // test de la luninosite et declenchement du servo
   switch (declenchementLuminosite) {
     case 1: // mise sous tension du servo pour l'ouverture de la porte
-      monServo.set_m_ouvFerm(false); // ouverture
-      reduit = 1;// vitesse normale
-      monServo.servoOuvFerm(batterieFaible, reduit);
+ //     monServo.set_m_ouvFerm(false); // ouverture
+  //    reduit = 1;// vitesse normale
+ //     monServo.servoOuvFerm(batterieFaible, reduit);
       break;
     case 2: // mise sous tension du servo pour la fermeture de la porte
-      monServo.set_m_ouvFerm(true); // fermeture
-      reduit = 1;// vitesse normale
-      monServo.servoOuvFerm(batterieFaible, reduit);
+ //     monServo.set_m_ouvFerm(true); // fermeture
+   //   reduit = 1;// vitesse normale
+  //    monServo.servoOuvFerm(batterieFaible, reduit);
       break;
   }
 }
@@ -968,7 +968,7 @@ void enterSleep(void) {
 ///-----routine de gestion du watchdog-----
 void routineGestionWatchdog() {
   if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
-    if ( !monServo.get_m_servoAction()) { // servo à l'arrêt
+ /*   if ( !monServo.get_m_servoAction()) { // servo à l'arrêt
       tempsWatchdog--;
       if (tempsWatchdog <= 0) {
         //indicateur led 13 pour le mode sleep
@@ -1017,7 +1017,7 @@ void routineGestionWatchdog() {
         //fonctionnement du buzzer en fonction du parametre (compteurWatchdogLumiere)
         //la routine tools.fonctionnementBuzzer ne fonctionne qu'en cas de switch radio sur off ????
         //tools.fonctionnementBuzzer(lum.get_m_compteurWatchdogLumiere(), 2000) ;
-        if (BUZZER) {
+ /*       if (BUZZER) {
           //si le compteur est > 1 , le buzzer fonctionne
           if (lum.get_m_compteurWatchdogLumiere() > 1) {
             digitalWrite(BUZZER_PIN, LOW);
@@ -1030,7 +1030,7 @@ void routineGestionWatchdog() {
       }
       f_wdt = 0;
       enterSleep(); //Revenir en mode veille
-    }
+    }*/
   }
 }
 
