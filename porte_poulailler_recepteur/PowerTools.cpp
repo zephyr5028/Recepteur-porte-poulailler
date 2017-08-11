@@ -30,7 +30,7 @@ PowerTools::~PowerTools()
 void  PowerTools::setupPower() {
   //Optimisation de la consommation
   //power_adc_disable(); // Convertisseur Analog / Digital pour les entrées analogiques
-  power_spi_disable();
+  //power_spi_disable();
   //power_twi_disable();
   //Si pas besoin de communiquer par l'usb
   //power_usart0_disable();
