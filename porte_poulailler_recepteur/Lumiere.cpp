@@ -45,14 +45,42 @@ unsigned int  Lumiere::reglageLumiere (bool matinSoir, byte touche) {
 ///------- lecture luminosite CAD-----
 int Lumiere::luminositeCAD() {
   int valLumiere = analogRead(m_lumierePin); //read the input on analog pin tension batterie
+  //Serial.print ("Lecture CAD = ");
+  //Serial.println (valLumiere);
   return valLumiere;
 }
 
 ///------- convertion CAD  vers tension luminosite -----
-float Lumiere::tensionLuminosite(int valLumiere) {
+float Lumiere::tensionLuminosite( int valLumiere) {
   // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 5V)
-  float voltage = valLumiere * (m_rapportConvertion / m_maxCAD);
-  return voltage;
+  //float voltage = valLumiere * (m_rapportConvertion / m_maxCAD);
+  // Serial.print ("voltage = ");
+  //Serial.println (voltage);
+  //Serial.print ("Lecture CAD = ");
+  //Serial.println (valLumiere);
+  // MAX_ADC_READING is 1023 and ADC_REF_VOLTAGE is 5
+  float ADC_REF_VOLTAGE = 5;
+  float resistorVoltage = valLumiere * ( ADC_REF_VOLTAGE / m_maxCAD);
+  //Serial.print  ("Volt_resistor = ");
+  //Serial.println (resistorVoltage);
+  float  ldrVoltage = ADC_REF_VOLTAGE - resistorVoltage;
+  //Serial.print  ("Volt_ldr = ");
+  //Serial.println (ldrVoltage);
+  int ldrResistance = (ldrVoltage / resistorVoltage) * 10000;  // REF_RESISTANCE is 10 kohm
+  //Serial.print ("Resisatnce_ldr = ");
+  //Serial.println (ldrResistance);
+  float LUX_CALC_SCALAR = 12518931;
+  float LUX_CALC_EXPONENT = -1.405;
+  int voltage = LUX_CALC_SCALAR * pow(ldrResistance, LUX_CALC_EXPONENT);
+  //int voltage = 1.25 * pow(10, 7) * pow (ldrResistance , LUX_CALC_EXPONENT);
+  //int voltage= (pow( ldrResistance, (1/-0.8616)))/(pow( 10, (5.118/-0.8616))); //lux calculation
+  //int voltage = 65.9 * (pow( valLumiere, 0.352));
+  //Serial.print ("ldr_lux = ");
+  //Serial.print (voltage);
+  //Serial.print (";");
+  // LUX_CALC_SCALAR and LUX_CALC_EXPONENT are determined by the Excel spreadsheet
+  // They are set to 12518931 and -1.405 respectively in my example
+  return (100-(ldrResistance/1000))*10;
 }
 
 ///-----lecture et convertion vers tension luminosite en float-----

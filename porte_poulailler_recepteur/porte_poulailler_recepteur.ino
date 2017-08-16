@@ -65,8 +65,8 @@ PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools et power
 #define PIN_ACCUS_N1  A6  //analog pin A6 : tension batterie N1
 #define PIN_ACCUS_N2  A7  //analog pin A7 : tension batterie N2
 #define ACCUS_TESION_MINIMALE  4.8 //valeur minimum de l'accu 4.8v
-#define ACCUS_CONVERSION_RAPPORT_ACCUS_N1  689 // rapport de convertion CAD float
-#define ACCUS_CONVERSION_RAPPORT_ACCUS_N2  693 // rapport de convertion CAD float
+#define ACCUS_CONVERSION_RAPPORT_ACCUS_N1  744 // rapport de convertion
+#define ACCUS_CONVERSION_RAPPORT_ACCUS_N2  747 // rapport de convertion
 #define ACCU_N1 true  // batterie N1 presente si true
 #define ACCU_N2 true // batterie N2 presente  si true
 boolean batterieFaible = false; //  batterie < ACCUS_TESION_MINIMALE = true
@@ -145,13 +145,19 @@ const bool typeTemperature = true; // true = celsius , false = fahrenheit
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
 HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
 
+/**  gestion  radio 433MHz  recepteur */
+#include <VirtualWire.h>
+// N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
+uint8_t message[VW_MAX_MESSAGE_LEN] = {0};
+byte taille_message = VW_MAX_MESSAGE_LEN;
+volatile boolean receiveMessage = false ;
+
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
-//const char affichageMenu[] PROGMEM = "      Date      .      Heure     . Heure Ouverture. Heure Fermeture.  Temperature   .     Lumiere    .  Lumiere matin .  Lumiere soir  . Choix Ouv/Ferm .Course ouverture.Course fermeture. Tension bat N1 . Tension bat N2 .Servo Pulse Rcod.";
 const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
-const char ouvertureDuBoitier[] PROGMEM = "Ouverture du boitier.";
-const char fermetureDuBoitier[] PROGMEM = "Fermeture du boitier.";
+//const char ouvertureDuBoitier[] PROGMEM = "Ouverture du boitier.";
+//const char fermetureDuBoitier[] PROGMEM = "Fermeture du boitier.";
 //const char aimantEnHaut[] PROGMEM = " aimant en haut .";
 
 
@@ -217,8 +223,8 @@ void displayTime () {
 
 ///----- affichage du circuit BH1750 Light Meter -----
 void affiLightMeter () {
-  uint16_t lux = lightMeter.readLightLevel();
   if ( boitierOuvert) { // si le boitier est ouvert
+    uint16_t lux = lightMeter.readLightLevel();
     byte ligne = 1;
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     mydisp.affichageLumFinCourse(lux, ligne, " lux", nonReglable);
@@ -337,19 +343,14 @@ void read_temp(const boolean typeTemperature) {
   -routine interruption D2 INT0
   -routine interruption D3 INT1
   -routine interruption Bp
-  -routine alarme 2
-  -routine alarme 1
   -routine interruption boitier ouvert
   -test fermeture boitier
 */
+
 ///-----routine interruption D2 INT0------
-//void myInterruptINT0() {
-//rotary.compteurRoueCodeuse(); // mis à jour du compteur de l'encodeur rotatif
-/* if (!interruptEncodeur) {
-   interruptEncodeur  = true; // pour prise en compte de l'it
-   debutTempsEncodeur  = millis(); // pour éviter les rebonds sur le front descendant du signal
-  }*/
-//}
+void myInterruptINT0() {
+  receiveMessage = true;
+}
 
 //-----routine interruption D3 INT1-----
 void myInterruptINT1() {
@@ -362,7 +363,7 @@ void myInterruptINT1() {
 void routineInterruptionBp() {
   if (interruptBp) { // test de l'appui sur bouton bp
     if (clav.testToucheBp ()) { //debounce pour le bp
- 
+
     }
     clav.testRelacheBp(interruptBp);// test du relache du bp
   }
@@ -372,7 +373,7 @@ void routineInterruptionBp() {
 ///-----test ouverture boitier-----
 void routineTestOuvertureBoitier()  {
   if ( clav.testBoitierOuvert( interruptOuvBoi, boitierOuvert)) {
-   
+
     boitierOuvert = true; // boitier ouvert
     mydisp.gestionCurseur(1); // activation du curseur
     deroulementMenu (incrementation); /// affichage du menu
@@ -386,7 +387,7 @@ void  routineTestFermetureBoitier() {
     boitierOuvert = false; // boitier ferme
     interruptOuvBoi = false; // autorisation de la prise en compte de l'IT
     mydisp.choixRetroEclairage (0);// extinction retro eclairage
-    
+
   }
 }
 
@@ -395,12 +396,12 @@ void  routineTestFermetureBoitier() {
 */
 ///-----routine lecture et affichage de la lumière-----
 void lumiere() {
-  int lumValue = lum.luminositeCAD(); // luminosite CAD sur pin A0
+  int lumValue = lum.tensionLuminositeCADversFloat(); // luminosite CAD sur pin A0
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     mydisp.affichageLumFinCourse(lumValue, ligne, " lux", nonReglable);
-  } 
+  }
 }
 
 
@@ -436,121 +437,35 @@ void deroulementMenu (byte increment) {
       case 7:  // tension batterie servo
         affiTensionBatServo(); //
         break;
-
-        //     case 14:  // commande manuelle
-        //       affiPulsePlusCptRoue(); // affichage pulse et comptage roue codeuse
-        //     break;
     }
   }
 }
 
 /* interruption du watchdog */
 ///----Watchdog Interrupt Service est exécité lors d'un timeout du WDT----
-/*ISR(WDT_vect) {
+ISR(WDT_vect) {
   if (f_wdt == 0) {
     f_wdt = 1; // flag
   }
-  }*/
+}
 
 ///-----entree dans le mode sleep-----
-/*void enterSleep(void) {
+void enterSleep(void) {
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
   sleep_mode(); //Entre dans le mode veille choisi
   // Le programme va reprendre ici après le timeout du WDT
   sleep_disable(); // La 1ère chose à faire est de désactiver le mode veille
-  }*/
+}
 
 ///-----routine de gestion du watchdog-----
-//void routineGestionWatchdog() {
-// if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
-/*   if ( !monServo.get_m_servoAction()) { // servo à l'arrêt
-     tempsWatchdog--;
-     if (tempsWatchdog <= 0) {
-       //indicateur led 13 pour le mode sleep
-       digitalWrite(LED_PIN, HIGH);
-       delay(10);
-       digitalWrite(LED_PIN, LOW);
-  /*
-       if (batterieFaible) { // affichage si la batterie est faible
-         char chaine[VW_MAX_MESSAGE_LEN - 1] = "";
-         char chaine1[27]; // longueur du texte batterie faible
-         for (byte i = 0; i < 27 ; i++) {
-           chaine1[i] = pgm_read_byte(affichageBatterieFaible + i);
-         }
-         strcat(chaine, numeroSerieBoitier);
-         strcat(chaine, chaine1);
-         radio.messageRadio(chaine);// on envoie le message
-       }*/
+void routineGestionWatchdog() {
+  if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
+    f_wdt = 0;
+    enterSleep(); //Revenir en mode veille
+  }
+}
 
-// informations à afficher
-/*       if (radio.get_m_radio()) {
-         /**
-            numero du boitier; //format Nxxx
-            date; // format __/__/___
-            heure; //format __:__:__
-            temperature; // format __.__C pour celcius
-            tension bat 1; // format __.__V pour volt
-            tension bat 2; // format __.__V
-            lumiere; // ___L pour lux
-            position porte; // ouv/ferm
-            temps fonctionnement servo; // format _____ms
-            compteur roue codeuse; //format ___P pour  pas
-*//*
-         radio.envoiTexte(boitierOuvert, ((char *)numeroSerieBoitier));// envoi en debut de message le numero de serie du boitier
-         displayDate();
-         displayTime();
-         read_temp(typeTemperature); // read temperature celsius=true
-         affiTensionBatCdes(); // affichage tension batterie commandes sur terminal
-         affiTensionBatServo(); // affichage tension batterie servomoteur sur terminal
-         lumiere();
-         affiPulsePlusCptRoue();
-         radio.envoiUnsignedInt(monServo.get_m_tempsTotal(), boitierOuvert,((char *)"ms;\0"));
-         radio.envoiInt(rotary.get_m_compteRoueCodeuse() - ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION, boitierOuvert,((char *)"P;\0"));
-         //radio.envoiUnsignedInt( &memoireLibre, boitierOuvert, ";\0"); // envoi message radio : memoire sram restante
-         radio.chaineVide();
-       }*/
-//fonctionnement du buzzer en fonction du parametre (compteurWatchdogLumiere)
-//la routine tools.fonctionnementBuzzer ne fonctionne qu'en cas de switch radio sur off ????
-//tools.fonctionnementBuzzer(lum.get_m_compteurWatchdogLumiere(), 2000) ;
-/*       if (BUZZER) {
-         //si le compteur est > 1 , le buzzer fonctionne
-         if (lum.get_m_compteurWatchdogLumiere() > 1) {
-           digitalWrite(BUZZER_PIN, LOW);
-           delay(2000);
-           digitalWrite(BUZZER_PIN, HIGH);
-         }
-       }
-       lum.set_m_compteurWatchdogLumiere(lum.get_m_compteurWatchdogLumiere() + 1);// incrementation compteur watchdog lumiere
-       tempsWatchdog = WATCHDOG_BOUCLES ; // initialisation du nombre de boucles
-     }
-     f_wdt = 0;
-     enterSleep(); //Revenir en mode veille
-   }*/
-// }
-//}
-/*
-  ///----- ,lecture BH1750 -----
-  int BH1750_Read(int address) {
-  int i = 0;
-  Wire.beginTransmission(address);
-  Wire.requestFrom(address, 2);
-  while (Wire.available())   {
-    buff[i] = Wire.read();  // receive one byte
-    i++;
-  }
-  Wire.endTransmission();
-  return i;
-  }
-
-  ///---- routine BH1750 -----
-  void BH1750_Init(int address)
-  {
-  Wire.beginTransmission(address);
-  Wire.write(0x10);//1lx reolution 120ms
-  Wire.endTransmission();
-  }
-*/
 ///-----routine affichage au demarrage-----
 void affichageDemarrage (byte colonne) {
   char temp[16] = {0};
@@ -616,31 +531,26 @@ void setup() {
     delay(10);
     // rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
   */
+
+  /*
+    LOW : l’interruption est déclenchée quand la broche concernée est LOW. Comme il s’agit d’un état et non d’un événement, l’interruption sera déclenchée tant que la broche est LOW.
+    Par conséquent, dès que l’ISR aura terminé son exécution, elle la recommencera. Pendant ce temps, loop() ne sera pas exécuté.
+    CHANGE : l’interruption est déclenchée quand la broche concernée change d’état, c’est à dire passe de LOW à HIGH ou bien de HIGH à LOW. Il s’agit d’un événement.
+    RISING : l’interruption est déclenchée quand la broche concernée passe de LOW à HIGH. Il s’agit également d’un événement.
+    FALLING : l’interruption est déclenchée quand la broche concernée passe de HIGH à LOW. Il s’agit encore d’un événement.
+  */
   attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
-  //  attachInterrupt(0, myInterruptINT0, RISING); // validation de l'interruption sur int0 (d2)
+  //attachInterrupt(digitalPinToInterrupt(1), myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
+  attachInterrupt(0, myInterruptINT0, FALLING); // validation de l'interruption sur int0 (d2)
+  // attachInterrupt(digitalPinToInterrupt(0), myInterruptINT0, CHANGE); // validation de l'interruption sur int0 (d2)
 
   tools.setupPower(); // initialisation power de l'arduino
 
-  // tools.setup_watchdog(9); // initialisation : maxi de 8 secondes pour l'it du watchdog
-
-  // radio.init();//initialisation radio
-
-  // monServo.init(); // initialisation du servo moteur et du relais
-
-  // rotary.init();// initialisation de la position de la roue codeuse
+  tools.setup_watchdog(9); // initialisation : maxi de 8 secondes pour l'it du watchdog
 
   // tools.setupBuzzer(1000); // initialisation du buzzer et test
-  /*
-    if (!SERVO_TEST) {
-      if (digitalRead(PIN_SECURITE_OUVERTURE)) {
-        reduit = 1;// vitesse normale
-        monServo.servoOuvFerm(batterieFaible, reduit);// mise sous tension du servo et ouverture de la porte
-      } else {
-        rotary.set_m_compteRoueCodeuse(ROUE_CODEUSE_POSITION_OUVERTURE_INITIALISATION);
-      }
-    }*/
 
-  //initialisation BH1750 light meter
+  /// initialisation BH1750 light meter
   /*
       BH1750 had six different measurment modes. They are divided in two groups -
       continuous and one-time measurments. In continuous mode, sensor continuously
@@ -663,6 +573,10 @@ void setup() {
         BH1750_ONE_TIME_HIGH_RES_MODE_2
   */
   lightMeter.init(BH1750_CONTINUOUS_HIGH_RES_MODE);
+  vw_set_rx_pin(2); // broche d11 recepteur
+  vw_setup(600); // initialisation de la bibliothèque avec la vitesse (vitesse_bps)
+  vw_rx_start(); // On peut maintenant recevoir des messages
+  Serial.println("Go !");
 }
 
 /* loop */
@@ -671,29 +585,14 @@ void loop() {
   lectureClavier(); // lecture du clavier
   temporisationAffichage(LCD_AFFICHAGE_TEMPS_BOUCLE) ; // temporisation pour l'affichage
 
-  //reglages
+  /// reglages
   reglageTime(); // reglages de l'heure, minute, seconde si touche fleche droite
   reglageDate(); // reglage de la date si touche fleche droite
-  // reglageHeureOuverture();// reglage de l'heure d'ouverture
-  //  reglageHeureFermeture();// reglage de l'heure de fermeture
-  // choixOuvFerm (); // choix de l'ouverture et la fermeture
-  // choixLumMatin();//  reglage de la lumiere du matin
-  //  choixLumSoir();//  reglage de la lumiere du soir
-  // regFinDeCourseFermeture(); // reglage fin de course fermeture
-  //  regFinDeCourseOuverture(); // reglage fin de course ouverture
   eclairageAfficheur(); // retro eclairage de l'afficheur
-  /*
-    if (SERVO_TEST) {
-      testServo(); // reglage du servo plus test de la roue codeuse et du servo, à l'aide de la console
-    }*/
-
-  //  radio.testSwitchEmissionRadio(); // test du switch emission radio on/off
 
   memoireLibre = freeMemory(); // calcul de la  memoire sram libre
 
-  // ouvFermLum() ;  // ouverture/fermeture par test de la lumière
-
-  // test suivant le nombre de batteries presentes
+  /// test suivant le nombre de batteries presentes
   if (ACCU_N1 and ACCU_N2) {
     batterieFaible = accusN1.accusFaible() or accusN2.accusFaible(); // test de la tension des batteries
   } else if (ACCU_N1) {
@@ -702,26 +601,41 @@ void loop() {
     batterieFaible = accusN2.accusFaible() ;// test de la tension de la batterie N2
   }
 
-  // ouverturePorte();
-  // fermeturePorte();
-
-  /* pas de l'encodeur RISING */
-  /* if (interruptEncodeur) {
-     if ((millis() - debutTempsEncodeur) > tempoEncodeur ) {
-       rotary.compteurRoueCodeuse(); // mis à jour du compteur de l'encodeur rotatif
-       interruptEncodeur = false; // autorisation nouvelle it
-     }
-    }*/
+  int lux = lightMeter.readLightLevel();
 
   routineTestFermetureBoitier(); // test fermeture boitier
   routineTestOuvertureBoitier();// test ouvertuer boitier
 
   routineInterruptionBp(); // routine interruption Bp
 
-  // routineInterrruptionAlarme2() ; // routine alarme 2
-  // routineInterruptionAlarme1(); // routine alarme 1
+  if (receiveMessage) {
+    noInterrupts();
+    if (vw_get_message(message, &taille_message))  {   // Non-blocking
+      int i;
+      digitalWrite(13, true); // Flash a light to show received good message
+      for (i = 0; i < taille_message - 1; i++)    {
+        // Serial.print(message[i], HEX);
+        Serial.write(message[i]);
+      }
+      Serial.println("");
+      digitalWrite(13, false);
+      Serial.print((char*)numeroSerieBoitier);
+      Serial.print(accusN1.tensionAccusCADversFloat());
+      Serial.print("V;");
+      Serial.print(lum.tensionLuminositeCADversFloat());
+      Serial.print("L;");
+      Serial.print(lux);
+      Serial.println("lux;");
+      //mydisp.affichageUneLigne((char*)message);
+    }
+    receiveMessage = false;
+    message[VW_MAX_MESSAGE_LEN] = {0};
+    taille_message = VW_MAX_MESSAGE_LEN;
+    interrupts();
 
-  // routineGestionWatchdog(); // routine de gestion du watchdog
+  }
+
+  routineGestionWatchdog(); // routine de gestion du watchdog
 
 }
 
