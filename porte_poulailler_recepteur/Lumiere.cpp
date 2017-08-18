@@ -80,11 +80,11 @@ float Lumiere::tensionLuminosite( int valLumiere) {
   //Serial.print (";");
   // LUX_CALC_SCALAR and LUX_CALC_EXPONENT are determined by the Excel spreadsheet
   // They are set to 12518931 and -1.405 respectively in my example
-  return (100-(ldrResistance/1000))*10;
+  return ldrResistance;
 }
 
 ///-----lecture et convertion vers tension luminosite en float-----
-float Lumiere::tensionLuminositeCADversFloat() {
+int Lumiere::tensionLuminositeCADversFloat() {
   float tension = tensionLuminosite(luminositeCAD());
   return tension;
 }

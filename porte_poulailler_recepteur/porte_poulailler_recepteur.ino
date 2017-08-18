@@ -56,10 +56,6 @@ boolean reglage = false; // menu=false ou reglage=true
 #define BUZZER_PIN 7 // broche du buzzer
 PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools et power
 
-/** led broche 13 */
-#define LED_PIN 13
-
-
 /** Accus */
 #include "Accus.h"
 #define PIN_ACCUS_N1  A6  //analog pin A6 : tension batterie N1
@@ -146,11 +142,12 @@ tmElements_t tm; // declaration de tm pour la lecture des informations date et h
 HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
 
 /**  gestion  radio 433MHz  recepteur */
-#include <VirtualWire.h>
+#include "ReceiverRXB6.h"
 // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
 uint8_t message[VW_MAX_MESSAGE_LEN] = {0};
-byte taille_message = VW_MAX_MESSAGE_LEN;
+uint8_t taille_message = VW_MAX_MESSAGE_LEN;
 volatile boolean receiveMessage = false ;
+ReceiverRXB6 myRXB6(DEBUG);
 
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
@@ -404,6 +401,30 @@ void lumiere() {
   }
 }
 
+///-----routine reception message-----
+void routineReceptionMessage (int lux,float temp) {
+  if (receiveMessage) {
+    noInterrupts();
+    if (myRXB6.reception(message, taille_message)) {
+      Serial.println("");
+      Serial.print((char*)numeroSerieBoitier);
+      Serial.print(temp);//valeur de la temperature
+      Serial.print("C;");
+      Serial.print(accusN1.tensionAccusCADversFloat());
+      Serial.print("V;");
+      Serial.print(accusN2.tensionAccusCADversFloat());
+      Serial.print("V;");
+      Serial.print(lum.tensionLuminositeCADversFloat());
+      Serial.print("R;");
+      Serial.print(lux);
+      Serial.println("lux;");
+    }
+    receiveMessage = false;
+    message[VW_MAX_MESSAGE_LEN] = {0};
+    taille_message = VW_MAX_MESSAGE_LEN;
+    interrupts();
+  }
+}
 
 /* menu */
 ///-----routine affichage menus------
@@ -484,7 +505,6 @@ void affichageDemarrage (byte colonne) {
 void setup() {
 
   Serial.begin(9600);
-  pinMode(LED_PIN, OUTPUT); // led broche 13
 
   rtc.init();// initialisation de l'horloge et verification de la presence de la carte RTC / memoire 24C32
 
@@ -573,9 +593,10 @@ void setup() {
         BH1750_ONE_TIME_HIGH_RES_MODE_2
   */
   lightMeter.init(BH1750_CONTINUOUS_HIGH_RES_MODE);
-  vw_set_rx_pin(2); // broche d11 recepteur
-  vw_setup(600); // initialisation de la bibliothèque avec la vitesse (vitesse_bps)
-  vw_rx_start(); // On peut maintenant recevoir des messages
+
+  /// initialisation recepteur RXB6
+  myRXB6.init();
+
   Serial.println("Go !");
 }
 
@@ -601,42 +622,17 @@ void loop() {
     batterieFaible = accusN2.accusFaible() ;// test de la tension de la batterie N2
   }
 
-  int lux = lightMeter.readLightLevel();
-
   routineTestFermetureBoitier(); // test fermeture boitier
   routineTestOuvertureBoitier();// test ouvertuer boitier
 
   routineInterruptionBp(); // routine interruption Bp
+  
+  int lux = lightMeter.readLightLevel();
+ float temp = rtc.calculTemperature (true);
 
-  if (receiveMessage) {
-    noInterrupts();
-    if (vw_get_message(message, &taille_message))  {   // Non-blocking
-      int i;
-      digitalWrite(13, true); // Flash a light to show received good message
-      for (i = 0; i < taille_message - 1; i++)    {
-        // Serial.print(message[i], HEX);
-        Serial.write(message[i]);
-      }
-      Serial.println("");
-      digitalWrite(13, false);
-      Serial.print((char*)numeroSerieBoitier);
-      Serial.print(accusN1.tensionAccusCADversFloat());
-      Serial.print("V;");
-      Serial.print(lum.tensionLuminositeCADversFloat());
-      Serial.print("L;");
-      Serial.print(lux);
-      Serial.println("lux;");
-      //mydisp.affichageUneLigne((char*)message);
-    }
-    receiveMessage = false;
-    message[VW_MAX_MESSAGE_LEN] = {0};
-    taille_message = VW_MAX_MESSAGE_LEN;
-    interrupts();
-
-  }
+  routineReceptionMessage(lux, temp); // routine reception message et affichage
 
   routineGestionWatchdog(); // routine de gestion du watchdog
-
 }
 
 
