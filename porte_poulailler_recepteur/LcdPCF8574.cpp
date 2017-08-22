@@ -99,6 +99,7 @@ void LcdPCF8574::affichageDateHeure(String jourSemaine, byte jourHeure, byte moi
     chaineLigne.concat(transformation( "m ", moisMinute));;// print minutes
     if ( anneeSeconde <= 60) {
       chaineLigne.concat(transformation( "s ", anneeSeconde));// print secondes
+      chaineLigne += "";
     }
   } else {
     chaineLigne += " ";
@@ -107,6 +108,7 @@ void LcdPCF8574::affichageDateHeure(String jourSemaine, byte jourHeure, byte moi
     chaineLigne.concat(transformation( " ", moisMinute));// print mois
     chaineLigne += " ";
     chaineLigne += anneeSeconde + 1970; // année depuis 1970
+    chaineLigne += " ";
   }
   affichageUneLigne(chaineLigne);// affichage sur lcd
 }
@@ -131,6 +133,7 @@ String LcdPCF8574::transformation (String texte, byte dateHeure ) {
 }
 
 ///-----affichage lumiere et fin de course-----
+
 void LcdPCF8574::affichageLumFinCourse( int LumFinCourse, byte ligne, String texte, bool siNonReglable)
 {
   m_ligne = ligne;
@@ -150,33 +153,9 @@ void LcdPCF8574::affichageVoltage( float voltage, String texte, byte ligne)
   chaineLigne += "    =  ";
   chaineLigne += voltage;
   chaineLigne += texte;
+  chaineLigne += "    ";
   affichageUneLigne(chaineLigne);// affichage sur lcd
   cursorPosition(0, 0, (char *)"");// decalage, ligne, texte
-}
-
-///-----affichage choix ouverture fermeture-----
-void LcdPCF8574::affichageChoix( bool ouverture, bool fermeture, byte ligne)
-{
-  m_ligne = ligne;
-  String chaineLigne = "";
-  chaineLigne += " ouv:";
-  if (ouverture)  chaineLigne += "hre "; else  chaineLigne += "lum ";
-  chaineLigne += "fer:";
-  if (fermeture)  chaineLigne += "hre "; else  chaineLigne += "lum ";
-  affichageUneLigne(chaineLigne);// affichage sur lcd
-}
-
-///-----affichage pulse et roue codeuse du servo-------
-void LcdPCF8574::affichageServo(int pulse, int roueCodeuse, byte ligne)
-{
-  m_ligne = ligne;
-  String chaineLigne = "";
-  chaineLigne += pulse;
-   chaineLigne += "ms   ";
-  chaineLigne += roueCodeuse;
-    chaineLigne += "pas";
-  affichageUneLigne(chaineLigne);// affichage sur lcd
-  cursorPosition(0, 0, (char *)""); // decalage, ligne, texte
 }
 
 ///-----Bonjour-----

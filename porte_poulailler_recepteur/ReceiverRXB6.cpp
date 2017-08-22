@@ -36,7 +36,9 @@ boolean ReceiverRXB6::reception(uint8_t* chaine, uint8_t taille) {
 void ReceiverRXB6::receivePrint(uint8_t* chaine, uint8_t taille) {
   for (byte i = 0; i < taille - 1; i++)    {
     //Serial.print(m_message[i], HEX);
-    Serial.write(chaine[i]);
+    if (Serial) {
+      Serial.write(chaine[i]);
+    }
   }
 }
 

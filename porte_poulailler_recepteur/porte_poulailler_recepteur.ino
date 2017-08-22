@@ -23,11 +23,6 @@
            __STDC__  1 si le compilateur est ISO, 0 sinon              entier
 */
 
-
-//////////////////////
-const char numeroSerieBoitier[] = "N005;\0"; // numero de serie du boitier recepteur
-/////////////////////
-
 /*--------------------------------------------------------------------------------*/
 /// choisir entre un afficheur lcd I2C de type Digole (PICF182) ou de type LiquidCrystal (PCF8574)
 
@@ -41,53 +36,51 @@ const char numeroSerieBoitier[] = "N005;\0"; // numero de serie du boitier recep
 #include <Flash.h>
 #include <avr/pgmspace.h> // non nécessaire maintenant
 
+
 /** power and tools */
 /** watchdog - Optimisation de la consommation */
 #include "PowerTools.h"
-#define DEBUG false // positionner debug pour l'utiliser ou pas
-/*-----------------------------*/
-//#define WATCHDOG_BOUCLES 16 // nombre de boucles (16) du watchdog : environ 64s pour 8 boucles
-/*-----------------------------*/
+#define DEBUG false // positionner debug 
 unsigned int memoireLibre = 0; // variable pour calcul de la memoire libre
 volatile int f_wdt = 1; // flag watchdog
-//byte tempsWatchdog = WATCHDOG_BOUCLES ; // boucle temps du chien de garde
 boolean reglage = false; // menu=false ou reglage=true
-#define BUZZER false //positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
+#define BUZZER false // positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
 #define BUZZER_PIN 7 // broche du buzzer
-PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools et power
+PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools and power
+
+
+/** definitions */
+#define V_REFERENCE 5.05 // tension de reference
+#define MAX_CAD 1023  // maximum du convertisseur analogique digital
 
 /** Accus */
 #include "Accus.h"
-#define PIN_ACCUS_N1  A6  //analog pin A6 : tension batterie N1
-#define PIN_ACCUS_N2  A7  //analog pin A7 : tension batterie N2
+#define PIN_ACCUS_N1  A6  // analog pin A6 : tension batterie N1
+#define PIN_ACCUS_N2  A7  // analog pin A7 : tension batterie N2
 #define ACCUS_TESION_MINIMALE  4.8 //valeur minimum de l'accu 4.8v
-#define ACCUS_CONVERSION_RAPPORT_ACCUS_N1  744 // rapport de convertion
-#define ACCUS_CONVERSION_RAPPORT_ACCUS_N2  747 // rapport de convertion
+#define ACCUS_R1 4700 // resistance  R1 du pont
+#define ACCUS_R2 10000 // resistance  R2 du pont
 #define ACCU_N1 true  // batterie N1 presente si true
 #define ACCU_N2 true // batterie N2 presente  si true
 boolean batterieFaible = false; //  batterie < ACCUS_TESION_MINIMALE = true
-Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT_ACCUS_N1, DEBUG );
-Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_CONVERSION_RAPPORT_ACCUS_N2, DEBUG );
+Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );
+Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );
 
 /** lumiere */
 #include "Lumiere.h"
-#define PIN_LUMIERE A0  //analog pin A0 : luminosite
-#define LUMIERE_CONVERSION_RAPPORT  5 // rapport de convertion CAD float
-#define LUMIERE_HEURE_FENETRE_SOIR  17  //horaire de la fenetre de non declenchement lumiere si utilisation horaire : 17h
-#define LUMIERE_BOUCLES   4  //  boucles pour valider l'ouverture / fermeture avec la lumière (compteur watchdog)
-#define LUMIERE_MATIN  330  // valeur de la lumière du matin
-#define LUMIERE_SOIR  80  // valeur de la lumiere du soir
-Lumiere lum(PIN_LUMIERE, LUMIERE_MATIN , LUMIERE_SOIR, LUMIERE_HEURE_FENETRE_SOIR, LUMIERE_CONVERSION_RAPPORT, LUMIERE_BOUCLES, DEBUG ); // objet lumiere
+#define PIN_LUMIERE A0  // analog pin A0 : luminosite
+#define LDR_R2 10000 // resistance  R2 du pont avec la LDR
+Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD, DEBUG ); // objet lumiere
 
 /** lumiere BH1750 **/
 #include "LumBH1750.h"
 #define BH1750_I2C_ADDRESS 0x23 // adresse du circuit I2C
-LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG);
+LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG); // objet BH150
 
 
 /** interruptions */
 volatile boolean interruptBp = false; // etat interruption entree 9
-volatile boolean interruptRTC = false; // etat interruption entree 5
+//volatile boolean interruptRTC = false; // etat interruption entree 5
 volatile boolean interruptOuvBoi = false; // etat interruption entree 6
 
 /** Clavier */
@@ -97,10 +90,11 @@ const byte menuDate = 1;
 const byte menuHeure = 2;
 const byte menuTemperature = 3;
 const byte menuLumiere = 4;
-const byte menuTensionBatCdes = 6; // tension batterie commandes
-const byte menuTensionBatServo = 7; // tension batterie servo
+const byte menuTensionBatCdes = 6; // tension batterie N1
+const byte menuTensionBatServo = 7; // tension batterie N2
 const byte menuLightMeter = 5; // mesure du circuit BH1750
-const byte lignesMenu = 7; // nombre de lignes du menu
+const byte menuRecepteur = 8; // recepteur radio
+const byte lignesMenu = 8; // nombre de lignes du menu
 const byte colonnes = 16; // colonnes de l'afficheur
 const byte oldkey = -1;
 const byte sensorClavier = A1; //pin A1 pour le clavier
@@ -121,7 +115,7 @@ bool LcdCursor = true; //curseur du lcd if true = enable
 /// I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
 #include "LcdDigoleI2C.h"
 LcdDigoleI2C mydisp( &Wire, '\x27', colonnes, debug); // classe lcd digole i2c (lcd 2*16 caracteres)
-const char affichageBonjour[] PROGMEM = "Porte Poulailler. Version 1.4.1  .Porte Poulailler.Manque carte RTC";
+const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
 #endif
 #ifdef LCD_LIQIDCRYSTAL
 #include "LcdPCF8574.h"
@@ -132,11 +126,11 @@ const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Recep
 
 /** RTC_DS3231 */
 #include "HorlogeDS3232.h"
-const byte rtcINT = 5; // digital pin D5 as l'interruption du rtc ( alarme)
+const byte rtcINT = 5; // digital pin D5 as l'interruption du rtc - NON CABLEE
 const byte adresseBoitier24C32 = 0x57;// adresse du boitier memoire eeprom 24c32
 const byte jourSemaine = 1, jour = 2, mois = 3, annee = 4, heure = 5, minutes = 6, secondes = 7;
-const byte alarm_1 = 1; // alarme 1
-const byte alarm_2 = 2; //alarme 2
+//const byte alarm_1 = 1; // alarme 1
+//const byte alarm_2 = 2; // alarme 2
 const bool typeTemperature = true; // true = celsius , false = fahrenheit
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
 HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
@@ -149,13 +143,22 @@ uint8_t taille_message = VW_MAX_MESSAGE_LEN;
 volatile boolean receiveMessage = false ;
 ReceiverRXB6 myRXB6(DEBUG);
 
+/** gestion carte SD */
+#include <SD.h>
+const int chipSelect = 4;
+boolean sdCard = false; //presence SD card true
+File monFichier;
+
+
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
-const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 ";
+const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .   Recepteur    ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
-//const char ouvertureDuBoitier[] PROGMEM = "Ouverture du boitier.";
-//const char fermetureDuBoitier[] PROGMEM = "Fermeture du boitier.";
-//const char aimantEnHaut[] PROGMEM = " aimant en haut .";
+const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;" ;// petits textes
+//////////////////////
+const char numeroSerieBoitier[] = "N005;\0"; // numero de serie du boitier recepteur
+const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
+/////////////////////
 
 
 /* clavier */
@@ -213,7 +216,10 @@ void displayDate() {
 void displayTime () {
   if ( boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
-    mydisp.affichageDateHeure("H", tm.Hour, tm.Minute, tm.Second);
+    // texte = H
+    char texte[1] = "";
+    texte[0] = pgm_read_byte(affichageTexte + 3 );
+    mydisp.affichageDateHeure(texte, tm.Hour, tm.Minute, tm.Second);
   }
 }
 
@@ -224,11 +230,25 @@ void affiLightMeter () {
     uint16_t lux = lightMeter.readLightLevel();
     byte ligne = 1;
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
-    mydisp.affichageLumFinCourse(lux, ligne, " lux", nonReglable);
+    // texte = " lux"
+    char texte[5] = "";
+    for (byte i = 4; i < 8; i++) {
+      texte[i - 4] = pgm_read_byte(affichageTexte +  i);
+    }
+    mydisp.affichageLumFinCourse(lux, ligne, texte, nonReglable);
   }
 
 }
 
+///-----affiRecepteur-----
+void affiRecepteur() {
+  if ( boitierOuvert) { // si le boitier est ouvert
+    byte ligne = 1;
+    bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
+    mydisp.resetPos(ligne);
+  }
+
+}
 
 /* afficheur */
 ///-----retro eclairage de l'afficheur-----
@@ -241,25 +261,29 @@ void eclairageAfficheur() {
 }
 
 /* batteries */
-///-------affichage tension batterie commandes
+///-------affichage tension batterie N1
 void affiTensionBatCdes() {
-  int valBat = accusN1.tensionAccusCAD(); // tension batterie CAD
-  float voltage = accusN1.tensionAccus(valBat);// read the input on analog pin A6 : tension batterie N1
+  float voltage = accusN1.tensionAccus();// read the input on analog pin A6 : tension batterie N1
   // print out the value you read:
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
-    mydisp.affichageVoltage(  voltage, "V",  ligne);
+    // texte = V
+    char texte[1] = "";
+    texte[0] = pgm_read_byte(affichageTexte + 2 );
+    mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
 }
 
-///-------affichage tension batterie servo-moteur
+///-------affichage tension batterie N2
 void affiTensionBatServo() {
-  int valBat = accusN2.tensionAccusCAD(); // tension batterie CAD
-  float voltage = accusN2.tensionAccus(valBat);// read the input on analog pin A7 : tension batterie N2
+  float voltage = accusN2.tensionAccus();// read the input on analog pin A7 : tension batterie N2
   // print out the value you read:
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
-    mydisp.affichageVoltage(  voltage, "V",  ligne);
+    // texte = V
+    char texte[1] = "";
+    texte[0] = pgm_read_byte(affichageTexte + 2 );
+    mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
 }
 
@@ -329,8 +353,12 @@ void read_temp(const boolean typeTemperature) {
   float t = rtc.calculTemperature (typeTemperature);//valeur de la temperature en fonction du type
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
-    String texte = "";
-    if (typeTemperature) texte = "C"; else texte = "F";
+    // texte = C ou F
+    char texte[1] = "";
+    texte[0] = pgm_read_byte(affichageTexte );
+    // String texte = "";
+    // if (typeTemperature) texte = "C"; else texte = "F";
+    if (typeTemperature) texte[0] = pgm_read_byte(affichageTexte ); else texte[0] = pgm_read_byte(affichageTexte + 1 );
     mydisp.affichageVoltage(t, texte, ligne);
   }
 }
@@ -351,7 +379,7 @@ void myInterruptINT0() {
 
 //-----routine interruption D3 INT1-----
 void myInterruptINT1() {
-  rtc.testInterruptRTC(interruptRTC);// test de l'entree 5 - interruption du rtc
+  // rtc.testInterruptRTC(interruptRTC);// test de l'entree 5 - interruption du rtc
   clav.testInterruptionBp (interruptBp);// test l'it du bp
   clav.testInterruptionBoitier (interruptOuvBoi);// test l'it de l'interrupteur du boitier
 }
@@ -393,7 +421,7 @@ void  routineTestFermetureBoitier() {
 */
 ///-----routine lecture et affichage de la lumière-----
 void lumiere() {
-  int lumValue = lum.tensionLuminositeCADversFloat(); // luminosite CAD sur pin A0
+  unsigned int lumValue = lum.tensionLuminosite(); // luminosite CAD sur pin A0
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
@@ -401,23 +429,81 @@ void lumiere() {
   }
 }
 
+///-----rouine affichage avec PROGMEM------
+String affTexteProgmem ( const char* nomFichier, byte iDepart, byte nbCaracteres) {
+  String chaine = "";
+  char texte[nbCaracteres + 1] = "";
+  byte i = iDepart;
+  for (i; i <  iDepart + nbCaracteres ; i++) {
+    texte[i - iDepart] = pgm_read_byte(nomFichier + i);
+  }
+  chaine += texte;
+  chaine += "\0";
+return  chaine;
+}
+
 ///-----routine reception message-----
-void routineReceptionMessage (int lux,float temp) {
+void routineReceptionMessage (int lux, float temp) {
   if (receiveMessage) {
     noInterrupts();
     if (myRXB6.reception(message, taille_message)) {
-      Serial.println("");
-      Serial.print((char*)numeroSerieBoitier);
-      Serial.print(temp);//valeur de la temperature
-      Serial.print("C;");
-      Serial.print(accusN1.tensionAccusCADversFloat());
-      Serial.print("V;");
-      Serial.print(accusN2.tensionAccusCADversFloat());
-      Serial.print("V;");
-      Serial.print(lum.tensionLuminositeCADversFloat());
-      Serial.print("R;");
-      Serial.print(lux);
-      Serial.println("lux;");
+      if (Serial) {
+        Serial.println("");
+        // numero de serie du boitier recepteur "N00x;"
+        Serial.print(affTexteProgmem(affNumBoitier, 0, 5));
+        Serial.print(temp);//valeur de la temperature
+        // texte = " C;"
+        Serial.print(affTexteProgmem(affichageTexte, 9, 2));
+        Serial.print(accusN1.tensionAccus());
+        // texte = "V;"
+        Serial.print(affTexteProgmem(affichageTexte, 11, 2));
+        Serial.print(accusN2.tensionAccus());
+        // texte = "V;"
+        Serial.print(affTexteProgmem(affichageTexte, 11, 2));
+        Serial.print(lum.tensionLuminosite());
+        // texte = "L;"
+        Serial.print(affTexteProgmem(affichageTexte, 13, 2));
+        Serial.print(lux);
+        // texte = "l;"
+        Serial.println(affTexteProgmem(affichageTexte, 15, 2));
+      }
+
+      if (sdCard) {
+        // si le fichier que vous voulez ouvrir n'existe pas, il sera créé.
+        monFichier = SD.open("boitiers.txt", FILE_WRITE); // ouvre le fichier en mode ecriture
+        //monFichier = SD.open("test.txt", FILE_READ); // ouvre le fichier en mode lecture
+        //monFichier = SD.open("test.txt"); // ouvre le fichier en mode lecture
+
+        // vérifier si le fichier est ouvert
+        if (monFichier) {
+          monFichier.print((char*) message);
+          monFichier.println("");
+          // numero de serie du boitier recepteur "N00x;"
+          monFichier.print(affTexteProgmem(affNumBoitier, 0, 5));
+          //monFichier.print((char*)numeroSerieBoitier);
+          monFichier.print(temp);//valeur de la temperature
+          // texte = " C;"
+          monFichier.print(affTexteProgmem(affichageTexte, 9, 2));
+          monFichier.print(accusN1.tensionAccus());
+          // texte = "V;"
+          monFichier.print(affTexteProgmem(affichageTexte, 11, 2));
+          monFichier.print(accusN2.tensionAccus());
+          // texte = "V;"
+          monFichier.print(affTexteProgmem(affichageTexte, 11, 2));
+          monFichier.print(lum.tensionLuminosite());
+          // texte = "L;"
+          monFichier.print(affTexteProgmem(affichageTexte, 13, 2));
+          monFichier.print(lux);
+          // texte = "l;"
+          monFichier.println(affTexteProgmem(affichageTexte, 15, 2));
+          monFichier.close(); // fermer le fichier
+        } else {
+          // si le fichier ne s'est pas ouvert :
+          if (Serial) {
+            //Serial.println("Err");
+          }
+        }
+      }
     }
     receiveMessage = false;
     message[VW_MAX_MESSAGE_LEN] = {0};
@@ -457,6 +543,9 @@ void deroulementMenu (byte increment) {
         break;
       case 7:  // tension batterie servo
         affiTensionBatServo(); //
+        break;
+      case 8:  // recepteur
+        affiRecepteur(); //
         break;
     }
   }
@@ -505,6 +594,7 @@ void affichageDemarrage (byte colonne) {
 void setup() {
 
   Serial.begin(9600);
+  // if (Serial) console = true; else console = false; //if serial UART to USB is connected show console O/P.
 
   rtc.init();// initialisation de l'horloge et verification de la presence de la carte RTC / memoire 24C32
 
@@ -570,6 +660,10 @@ void setup() {
 
   // tools.setupBuzzer(1000); // initialisation du buzzer et test
 
+  // initialisation des accus
+  accusN1.init();
+  accusN2.init();
+
   /// initialisation BH1750 light meter
   /*
       BH1750 had six different measurment modes. They are divided in two groups -
@@ -597,7 +691,18 @@ void setup() {
   /// initialisation recepteur RXB6
   myRXB6.init();
 
-  Serial.println("Go !");
+  if (!SD.begin(chipSelect)) {
+    if (Serial) {
+      //Serial.println("Err");
+    }
+    sdCard = false;
+  } else {
+    if (Serial) {
+      //Serial.println("ok");
+    }
+    sdCard = true;
+  }
+
 }
 
 /* loop */
@@ -626,9 +731,9 @@ void loop() {
   routineTestOuvertureBoitier();// test ouvertuer boitier
 
   routineInterruptionBp(); // routine interruption Bp
-  
+
   int lux = lightMeter.readLightLevel();
- float temp = rtc.calculTemperature (true);
+  float temp = rtc.calculTemperature (true);
 
   routineReceptionMessage(lux, temp); // routine reception message et affichage
 
