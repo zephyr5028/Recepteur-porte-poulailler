@@ -769,15 +769,16 @@ void loop() {
 
   RTC.read(tm); // lecture date et heure
   /*
-   * // espace à la place du zero
+     // espace à la place du zero - prend beacoup de place en memoire programme
     sprintf(fileName, "%d%d%d.txt", tm.Day, tm.Month, tm.Year + 1970);
   */
+  // nom du fichier sur la carte SD : anneemoisjour.txt
   fileName = "";
-  fileName += tm.Day;
-  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
   fileName += tm.Year + 1970; // année depuis 1970
+  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
+  fileName.concat(mydisp.transformation( "", tm.Day));// print Day;
   fileName += ".txt";
- // Serial.println (fileName);
+  // Serial.println (fileName);
 
   /// test suivant le nombre de batteries presentes
   if (ACCU_N1 and ACCU_N2) {
