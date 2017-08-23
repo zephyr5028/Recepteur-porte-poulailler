@@ -99,7 +99,7 @@ void LcdPCF8574::affichageDateHeure(String jourSemaine, byte jourHeure, byte moi
     chaineLigne.concat(transformation( "m ", moisMinute));;// print minutes
     if ( anneeSeconde <= 60) {
       chaineLigne.concat(transformation( "s ", anneeSeconde));// print secondes
-      chaineLigne += "";
+      chaineLigne += " ";
     }
   } else {
     chaineLigne += " ";
@@ -142,7 +142,7 @@ void LcdPCF8574::affichageLumFinCourse( int LumFinCourse, byte ligne, String tex
   chaineLigne += LumFinCourse;
   chaineLigne += texte;
   affichageUneLigne(chaineLigne);// affichage sur lcd
-  if (siNonReglable)  cursorPosition(0, 0, (char *)"");
+  if (siNonReglable)  cursorPosition(0, 0);
 }
 
 ///-----affichage tensions-----
@@ -155,7 +155,7 @@ void LcdPCF8574::affichageVoltage( float voltage, String texte, byte ligne)
   chaineLigne += texte;
   chaineLigne += "    ";
   affichageUneLigne(chaineLigne);// affichage sur lcd
-  cursorPosition(0, 0, (char *)"");// decalage, ligne, texte
+  cursorPosition(0, 0);// decalage, ligne, texte
 }
 
 ///-----Bonjour-----
@@ -172,7 +172,7 @@ void LcdPCF8574::bonjour(String chaine1, String chaine2) {
     delay (700);
   }
   gestionCurseur (true);
-  cursorPosition(0, 0, (char *)""); // decalage, ligne, texte
+  cursorPosition(0, 0); // decalage, ligne, texte
   choixRetroEclairage(false);
 }
 
@@ -182,7 +182,7 @@ void LcdPCF8574::gestionCurseur (bool curseur) {
 }
 
 ///-----position du curseur : decalage, ligne, texte-----
-void LcdPCF8574::cursorPosition(byte decalage, byte ligne, char *texte) {
+void LcdPCF8574::cursorPosition(byte decalage, byte ligne) {
   m_ligne = ligne;
   setCursor(decalage, m_ligne);
 }

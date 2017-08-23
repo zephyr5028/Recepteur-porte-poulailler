@@ -27,11 +27,11 @@ class LcdPCF8574  : public LiquidCrystal_I2C
     void resetPos(byte ligne);//reset display position and clean the line
     void affichageDateHeure(String jourSemaine, byte jourHeure, byte moisMinute,  byte anneeSeconde);//affichage de la date ou de l'heure
     String transformation (String chaine, byte dateHeure); // transformation donnees date et heure
-    void affichageLumFinCourse( int lum,  byte ligne,String texte, bool siNonReglable = 0); //affichage lumiere et fin de course
+    void affichageLumFinCourse( int lum,  byte ligne, String texte, bool siNonReglable = 0); //affichage lumiere et fin de course
     void affichageVoltage( float voltage, String texte,  byte ligne); //affichage tensions
     void razLcd(); //remise à zero du lcd
     void bonjour(String chaine1, String chaine2); //Bonjour
-    void cursorPosition(byte decalage, byte ligne, char *texte); // position du curseur
+    void cursorPosition(byte decalage, byte ligne); // position du curseur
     void gestionCurseur (bool curseur);//activation / desactivation du curseur
     void retroEclairage ();//activation / desactivation du retro eclairage (bascule)
     void choixRetroEclairage (bool choix);//choix activation / desactivation du retro eclairage

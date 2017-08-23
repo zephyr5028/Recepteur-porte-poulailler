@@ -90,11 +90,14 @@ const byte menuDate = 1;
 const byte menuHeure = 2;
 const byte menuTemperature = 3;
 const byte menuLumiere = 4;
+const byte menuLightMeter = 5; // mesure du circuit BH1750
 const byte menuTensionBatCdes = 6; // tension batterie N1
 const byte menuTensionBatServo = 7; // tension batterie N2
-const byte menuLightMeter = 5; // mesure du circuit BH1750
-const byte menuRecepteur = 8; // recepteur radio
-const byte lignesMenu = 8; // nombre de lignes du menu
+const byte menuRecepteur_0 = 8; // recepteur radio
+const byte menuRecepteur_1 = 9; // recepteur radio - 1 : 2eme partie
+const byte menuRecepteur_2 = 10; // recepteur radio - 2 : 3eme partie
+const byte menuRecepteur_3 = 11; // recepteur radio - 2 : 3eme partie
+const byte lignesMenu = 11; // nombre de lignes du menu
 const byte colonnes = 16; // colonnes de l'afficheur
 const byte oldkey = -1;
 const byte sensorClavier = A1; //pin A1 pour le clavier
@@ -138,7 +141,7 @@ HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
 /**  gestion  radio 433MHz  recepteur */
 #include "ReceiverRXB6.h"
 // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
-uint8_t message[VW_MAX_MESSAGE_LEN] = {0};
+uint8_t message[VW_MAX_MESSAGE_LEN] = "";
 uint8_t taille_message = VW_MAX_MESSAGE_LEN;
 volatile boolean receiveMessage = false ;
 ReceiverRXB6 myRXB6(DEBUG);
@@ -147,12 +150,14 @@ ReceiverRXB6 myRXB6(DEBUG);
 #include <SD.h>
 const int chipSelect = 4;
 boolean sdCard = false; //presence SD card true
+//char fileName[12] = "";
+String fileName = "";
 File monFichier;
 
 
 /** progmem  mémoire flash */
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
-const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .   Recepteur    ";
+const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;" ;// petits textes
 //////////////////////
@@ -217,7 +222,7 @@ void displayTime () {
   if ( boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     // texte = H
-    char texte[1] = "";
+    char texte[2] = "";
     texte[0] = pgm_read_byte(affichageTexte + 3 );
     mydisp.affichageDateHeure(texte, tm.Hour, tm.Minute, tm.Second);
   }
@@ -240,14 +245,43 @@ void affiLightMeter () {
 
 }
 
+///-----routine lecture d'un message en plusieurs morceaux-----
+void morceaux16caracteres (byte debut) {
+  char texteAffiLCD[16] = {};
+  mydisp.cursorPosition(0, 1); // decalage, ligne
+  for ( byte i = debut ; i <  debut + 16; i++) {
+    if (message[i] == ';')  texteAffiLCD[i - debut] = ' ' ; else texteAffiLCD[i - debut] = message[i];
+  }
+  mydisp.affichageUneLigne(texteAffiLCD);
+}
+
 ///-----affiRecepteur-----
 void affiRecepteur() {
   if ( boitierOuvert) { // si le boitier est ouvert
-    byte ligne = 1;
-    bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
-    mydisp.resetPos(ligne);
-  }
+    mydisp.cursorPosition(12, 0); // decalage, ligne
+    char numBoitierAffiLCD[4] = {};
+    for (byte i = 0; i < 4; i++) {
+      numBoitierAffiLCD[i] = message[i];
+    }
+    mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
 
+    if (incrementation == menuRecepteur_0) {
+      byte debut = 5;
+      morceaux16caracteres (debut);
+    }
+    if (incrementation == menuRecepteur_1) {
+      byte debut = 21;
+      morceaux16caracteres (debut);
+    }
+    if (incrementation == menuRecepteur_2) {
+      byte debut = 37;
+      morceaux16caracteres (debut);
+    }
+    if (incrementation == menuRecepteur_3) {
+      byte debut = 53;
+      morceaux16caracteres (debut);
+    }
+  }
 }
 
 /* afficheur */
@@ -268,7 +302,7 @@ void affiTensionBatCdes() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
-    char texte[1] = "";
+    char texte[2] = "";
     texte[0] = pgm_read_byte(affichageTexte + 2 );
     mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
@@ -281,7 +315,7 @@ void affiTensionBatServo() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
-    char texte[1] = "";
+    char texte[2] = "";
     texte[0] = pgm_read_byte(affichageTexte + 2 );
     mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
@@ -354,7 +388,7 @@ void read_temp(const boolean typeTemperature) {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = C ou F
-    char texte[1] = "";
+    char texte[2] = "";
     texte[0] = pgm_read_byte(affichageTexte );
     // String texte = "";
     // if (typeTemperature) texte = "C"; else texte = "F";
@@ -425,11 +459,16 @@ void lumiere() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
-    mydisp.affichageLumFinCourse(lumValue, ligne, " lux", nonReglable);
+    // texte = " lux"
+    char texte[5] = "";
+    for (byte i = 4; i < 8; i++) {
+      texte[i - 4] = pgm_read_byte(affichageTexte +  i);
+    }
+    mydisp.affichageLumFinCourse(lumValue, ligne, texte, nonReglable);
   }
 }
 
-///-----rouine affichage avec PROGMEM------
+///-----routine affichage avec PROGMEM------
 String affTexteProgmem ( const char* nomFichier, byte iDepart, byte nbCaracteres) {
   String chaine = "";
   char texte[nbCaracteres + 1] = "";
@@ -439,18 +478,18 @@ String affTexteProgmem ( const char* nomFichier, byte iDepart, byte nbCaracteres
   }
   chaine += texte;
   chaine += "\0";
-return  chaine;
+  return  chaine;
 }
 
 ///-----routine reception message-----
 void routineReceptionMessage (int lux, float temp) {
   if (receiveMessage) {
     noInterrupts();
+
     if (myRXB6.reception(message, taille_message)) {
       if (Serial) {
         Serial.println("");
-        // numero de serie du boitier recepteur "N00x;"
-        Serial.print(affTexteProgmem(affNumBoitier, 0, 5));
+        Serial.print(affTexteProgmem(affNumBoitier, 0, 6));
         Serial.print(temp);//valeur de la temperature
         // texte = " C;"
         Serial.print(affTexteProgmem(affichageTexte, 9, 2));
@@ -469,8 +508,9 @@ void routineReceptionMessage (int lux, float temp) {
       }
 
       if (sdCard) {
-        // si le fichier que vous voulez ouvrir n'existe pas, il sera créé.
-        monFichier = SD.open("boitiers.txt", FILE_WRITE); // ouvre le fichier en mode ecriture
+        // si le fichier que vous voulez ouvrir n'existe pas, il sera créé (8 caracteres maxi).
+        // monFichier = SD.open("boitiers.txt", FILE_WRITE); // ouvre le fichier en mode ecriture
+        monFichier = SD.open(fileName, FILE_WRITE); // ouvre le fichier en mode ecriture
         //monFichier = SD.open("test.txt", FILE_READ); // ouvre le fichier en mode lecture
         //monFichier = SD.open("test.txt"); // ouvre le fichier en mode lecture
 
@@ -479,7 +519,7 @@ void routineReceptionMessage (int lux, float temp) {
           monFichier.print((char*) message);
           monFichier.println("");
           // numero de serie du boitier recepteur "N00x;"
-          monFichier.print(affTexteProgmem(affNumBoitier, 0, 5));
+          monFichier.print(affTexteProgmem(affNumBoitier, 0, 6));
           //monFichier.print((char*)numeroSerieBoitier);
           monFichier.print(temp);//valeur de la temperature
           // texte = " C;"
@@ -500,7 +540,7 @@ void routineReceptionMessage (int lux, float temp) {
         } else {
           // si le fichier ne s'est pas ouvert :
           if (Serial) {
-            //Serial.println("Err");
+            Serial.println("Err fi");
           }
         }
       }
@@ -517,34 +557,43 @@ void routineReceptionMessage (int lux, float temp) {
 void deroulementMenu (byte increment) {
   if (boitierOuvert) {
     byte j = ((increment - 1) * (colonnes + 1)); // tous les 16 caractères
-    mydisp.cursorPosition(0, 0, ((char *)"")); // decalage, ligne, texte
+    mydisp.cursorPosition(0, 0); // decalage, ligne
     for (byte i = j; i < j + colonnes; i++) { // boucle pour afficher 16 caractères sur le lcd
       char temp = pgm_read_byte(affichageMenu + i); // utilisation du texte présent en mèmoire flash
       mydisp.print(temp);// valable pour digoleSerial et liquidCrystal
     }
     switch (increment) { // test de la valeur de incrementation pour affichage des parametres
-      case 1: // Date
+      case menuDate: // Date
         displayDate(); // affichage de la date
         break;
-      case 2: // heure
+      case menuHeure: // heure
         displayTime(); // affichage de l'heure
         break;
-      case 3: // temperature
+      case menuTemperature: // temperature
         read_temp(true); // read temperature celsius=true
         break;
-      case 4: //lumiere
+      case menuLumiere: //lumiere
         lumiere(); // lecture et affichage de la lumiere
         break;
-      case 5:  // mesure du circuit BH1750
+      case menuLightMeter:  // mesure du circuit BH1750
         affiLightMeter(); //
         break;
-      case 6:  // tension batterie commandes
+      case menuTensionBatCdes:  // tension batterie commandes
         affiTensionBatCdes(); //
         break;
-      case 7:  // tension batterie servo
+      case menuTensionBatServo:  // tension batterie servo
         affiTensionBatServo(); //
         break;
-      case 8:  // recepteur
+      case menuRecepteur_0:  // recepteur
+        affiRecepteur(); //
+        break;
+      case menuRecepteur_1:  // recepteur - 1
+        affiRecepteur(); //
+        break;
+      case menuRecepteur_2:  // recepteur - 2
+        affiRecepteur(); //
+        break;
+      case menuRecepteur_3:  // recepteur - 3
         affiRecepteur(); //
         break;
     }
@@ -693,12 +742,12 @@ void setup() {
 
   if (!SD.begin(chipSelect)) {
     if (Serial) {
-      //Serial.println("Err");
+      Serial.println("Err sd");
     }
     sdCard = false;
   } else {
     if (Serial) {
-      //Serial.println("ok");
+      Serial.println("ok");
     }
     sdCard = true;
   }
@@ -717,6 +766,18 @@ void loop() {
   eclairageAfficheur(); // retro eclairage de l'afficheur
 
   memoireLibre = freeMemory(); // calcul de la  memoire sram libre
+
+  RTC.read(tm); // lecture date et heure
+  /*
+   * // espace à la place du zero
+    sprintf(fileName, "%d%d%d.txt", tm.Day, tm.Month, tm.Year + 1970);
+  */
+  fileName = "";
+  fileName += tm.Day;
+  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
+  fileName += tm.Year + 1970; // année depuis 1970
+  fileName += ".txt";
+ // Serial.println (fileName);
 
   /// test suivant le nombre de batteries presentes
   if (ACCU_N1 and ACCU_N2) {
