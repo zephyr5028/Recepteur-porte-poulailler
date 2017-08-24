@@ -150,7 +150,6 @@ ReceiverRXB6 myRXB6(DEBUG);
 #include <SD.h>
 const int chipSelect = 4;
 boolean sdCard = false; //presence SD card true
-//char fileName[12] = "";
 String fileName = "";
 File monFichier;
 
@@ -161,7 +160,6 @@ const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temper
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;" ;// petits textes
 //////////////////////
-const char numeroSerieBoitier[] = "N005;\0"; // numero de serie du boitier recepteur
 const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
 /////////////////////
 
@@ -190,6 +188,20 @@ void temporisationAffichage(const int boucleTemps) {
   }
 }
 
+///----- build fileName-----
+void buildFileName() {
+  RTC.read(tm); // lecture date et heure
+  /*
+     // espace à la place du zero - prend beacoup de place en memoire programme
+    sprintf(fileName, "%d%d%d.txt", tm.Day, tm.Month, tm.Year + 1970);
+  */
+  // nom du fichier sur la carte SD : anneemoisjour.txt
+  fileName = "";// raz du nom de fichier
+  fileName += tm.Year + 1970; // année depuis 1970
+  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
+  fileName.concat(mydisp.transformation( "", tm.Day));// print Day;
+  fileName += ".txt";
+}
 
 ///----routine lecture et ecriture date and time-----
 void ecritureDateTime() {
@@ -242,7 +254,6 @@ void affiLightMeter () {
     }
     mydisp.affichageLumFinCourse(lux, ligne, texte, nonReglable);
   }
-
 }
 
 ///-----routine lecture d'un message en plusieurs morceaux-----
@@ -422,7 +433,7 @@ void myInterruptINT1() {
 void routineInterruptionBp() {
   if (interruptBp) { // test de l'appui sur bouton bp
     if (clav.testToucheBp ()) { //debounce pour le bp
-
+      //...
     }
     clav.testRelacheBp(interruptBp);// test du relache du bp
   }
@@ -432,7 +443,6 @@ void routineInterruptionBp() {
 ///-----test ouverture boitier-----
 void routineTestOuvertureBoitier()  {
   if ( clav.testBoitierOuvert( interruptOuvBoi, boitierOuvert)) {
-
     boitierOuvert = true; // boitier ouvert
     mydisp.gestionCurseur(1); // activation du curseur
     deroulementMenu (incrementation); /// affichage du menu
@@ -446,7 +456,6 @@ void  routineTestFermetureBoitier() {
     boitierOuvert = false; // boitier ferme
     interruptOuvBoi = false; // autorisation de la prise en compte de l'IT
     mydisp.choixRetroEclairage (0);// extinction retro eclairage
-
   }
 }
 
@@ -468,13 +477,23 @@ void lumiere() {
   }
 }
 
+///-----clear chaine caracteres----
+void clearChaine (char* chaine, size_t nb) {
+  size_t i;//L'opérateur sizeof de C et de C++ est de type std::size_t. Cet opérateur est très efficace du fait qu'il est évalué à la compilation et ne coûte donc rien à l'exécution.
+  for (i = 0; i < nb; i++) {
+    chaine[i] = 0;
+  }
+}
+
 ///-----routine affichage avec PROGMEM------
-String affTexteProgmem ( const char* nomFichier, byte iDepart, byte nbCaracteres) {
+String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
   String chaine = "";
-  char texte[nbCaracteres + 1] = "";
+  //char texte[nbCaracteres + 1] = "";
+  char texte[nbCaracteres + 1];
+  clearChaine (texte, nbCaracteres + 1);
   byte i = iDepart;
   for (i; i <  iDepart + nbCaracteres ; i++) {
-    texte[i - iDepart] = pgm_read_byte(nomFichier + i);
+    texte[i - iDepart] = pgm_read_byte(donnees + i);
   }
   chaine += texte;
   chaine += "\0";
@@ -504,12 +523,15 @@ void routineReceptionMessage (int lux, float temp) {
         Serial.print(affTexteProgmem(affichageTexte, 13, 2));
         Serial.print(lux);
         // texte = "l;"
-        Serial.println(affTexteProgmem(affichageTexte, 15, 2));
+        Serial.print(affTexteProgmem(affichageTexte, 15, 2));
+        if (batterieFaible) { // affichage si la batterie est faible
+          Serial.print(affTexteProgmem(affichageBatterieFaible, 0, 25));
+        }
+        Serial.println("");
       }
 
       if (sdCard) {
         // si le fichier que vous voulez ouvrir n'existe pas, il sera créé (8 caracteres maxi).
-        // monFichier = SD.open("boitiers.txt", FILE_WRITE); // ouvre le fichier en mode ecriture
         monFichier = SD.open(fileName, FILE_WRITE); // ouvre le fichier en mode ecriture
         //monFichier = SD.open("test.txt", FILE_READ); // ouvre le fichier en mode lecture
         //monFichier = SD.open("test.txt"); // ouvre le fichier en mode lecture
@@ -535,7 +557,11 @@ void routineReceptionMessage (int lux, float temp) {
           monFichier.print(affTexteProgmem(affichageTexte, 13, 2));
           monFichier.print(lux);
           // texte = "l;"
-          monFichier.println(affTexteProgmem(affichageTexte, 15, 2));
+          monFichier.print(affTexteProgmem(affichageTexte, 15, 2));
+          if (batterieFaible) { // affichage si la batterie est faible
+            monFichier.print(affTexteProgmem(affichageBatterieFaible, 0, 25));
+          }
+          monFichier.println("");
           monFichier.close(); // fermer le fichier
         } else {
           // si le fichier ne s'est pas ouvert :
@@ -620,6 +646,7 @@ void enterSleep(void) {
 ///-----routine de gestion du watchdog-----
 void routineGestionWatchdog() {
   if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
+    //...
     f_wdt = 0;
     enterSleep(); //Revenir en mode veille
   }
@@ -660,36 +687,6 @@ void setup() {
 
   incrementation = menuDate; // position du  menu au demarrage
   deroulementMenu (incrementation); // affichage du menu
-  /*
-    lum.set_m_ouverture( rtc.i2c_eeprom_read_byte( 0x14));// lecture du type d'ouverture @14  de l'eeprom de la carte rtc (i2c @ 0x57)
-    delay(10);
-    lum.set_m_fermeture( rtc.i2c_eeprom_read_byte( 0x15)); // lecture du type de fermeture @15   de l'eeprom de la carte rtc (i2c @ 0x57)
-    delay(10);
-
-    byte val1 = rtc.i2c_eeprom_read_byte( 0x16); // lecture pf lumière du matin (byte)
-    delay(10);
-    byte val2 = rtc.i2c_eeprom_read_byte( 0x17); // lecture Pf lumiere du matin (byte)
-    delay(10);
-    lum.set_m_lumMatin((val2 << 8) + val1);// mots 2 byte vers mot int lumMatin
-
-    val1 = rtc.i2c_eeprom_read_byte( 0x18); // lecture pf lumière du soir (byte)
-    delay(10);
-    val2 = rtc.i2c_eeprom_read_byte( 0x19); // lecture Pf lumiere du soir (byte)
-    delay(10);
-    lum.set_m_lumSoir((val2 << 8) + val1);// mots 2 byte vers mot int lumSoir
-
-    val1 = rtc.i2c_eeprom_read_byte( 0x20); // lecture pf fin de course haut (byte)
-    delay(10);
-    val2 = rtc.i2c_eeprom_read_byte( 0x21); // lecture Pf fin de course haut (byte)
-    delay(10);
-    // rotary.set_m_finDeCourseFermeture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseFermeture
-
-    val1 = rtc.i2c_eeprom_read_byte( 0x22); // lecture pf fin de course bas (byte)
-    delay(10);
-    val2 = rtc.i2c_eeprom_read_byte( 0x23); // lecture Pf fin de course bas (byte)
-    delay(10);
-    // rotary.set_m_finDeCourseOuverture ((val2 << 8) + val1);  // mots 2 byte vers mot int finDeCourseOuverture
-  */
 
   /*
     LOW : l’interruption est déclenchée quand la broche concernée est LOW. Comme il s’agit d’un état et non d’un événement, l’interruption sera déclenchée tant que la broche est LOW.
@@ -699,9 +696,7 @@ void setup() {
     FALLING : l’interruption est déclenchée quand la broche concernée passe de HIGH à LOW. Il s’agit encore d’un événement.
   */
   attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
-  //attachInterrupt(digitalPinToInterrupt(1), myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
   attachInterrupt(0, myInterruptINT0, FALLING); // validation de l'interruption sur int0 (d2)
-  // attachInterrupt(digitalPinToInterrupt(0), myInterruptINT0, CHANGE); // validation de l'interruption sur int0 (d2)
 
   tools.setupPower(); // initialisation power de l'arduino
 
@@ -767,18 +762,7 @@ void loop() {
 
   memoireLibre = freeMemory(); // calcul de la  memoire sram libre
 
-  RTC.read(tm); // lecture date et heure
-  /*
-     // espace à la place du zero - prend beacoup de place en memoire programme
-    sprintf(fileName, "%d%d%d.txt", tm.Day, tm.Month, tm.Year + 1970);
-  */
-  // nom du fichier sur la carte SD : anneemoisjour.txt
-  fileName = "";
-  fileName += tm.Year + 1970; // année depuis 1970
-  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
-  fileName.concat(mydisp.transformation( "", tm.Day));// print Day;
-  fileName += ".txt";
-  // Serial.println (fileName);
+  buildFileName();
 
   /// test suivant le nombre de batteries presentes
   if (ACCU_N1 and ACCU_N2) {

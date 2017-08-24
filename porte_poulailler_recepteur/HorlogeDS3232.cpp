@@ -163,22 +163,6 @@ void HorlogeDS3232::reglageAlarme( const byte touche, const byte alarme, const b
   }
 }
 
-///-----sauvegarde dans l'eeprom I2C le choix de la lumiere ou de la valeur de fin de course-----
-void HorlogeDS3232::sauvEepromChoix ( unsigned int valeurChoix, const bool matinSoirOuvFerm, const bool lumiereFinDeCourse) {
-  byte val1 = valeurChoix & 0xFF; // pf
-  byte val2 = (valeurChoix >> 8) & 0xFF; //  PF
-  byte adresseMemoire(0);
-  if (lumiereFinDeCourse) {
-    if (matinSoirOuvFerm) adresseMemoire = 0x16; else adresseMemoire = 0x18; // début adresses memoire de sauvegarde
-  } else {
-    if (matinSoirOuvFerm) adresseMemoire = 0x22; else adresseMemoire = 0x20; // début adresses memoire de sauvegarde
-  }
-  i2c_eeprom_write_byte( adresseMemoire, val1); // écriture de la valeur du reglage de la lumiere ( low )  dans l'eeprom de la carte rtc (i2c @ 0x57)
-  delay(10);
-  i2c_eeprom_write_byte( adresseMemoire + 1, val2); // écriture de la valeur du reglage de la lumiere ( high )dans l'eeprom de la carte rtc (i2c @ 0x57)
-  delay(10);
-}
-
 ///------valeur de la temperature en fonction du type------
 float HorlogeDS3232::calculTemperature (const bool typeTemperature) {
   int t = RTC.temperature();
@@ -189,16 +173,6 @@ float HorlogeDS3232::calculTemperature (const bool typeTemperature) {
     float fahrenheit = celsius * 9.0 / 5.0 + 32.0;
     return fahrenheit;
   }
-}
-
-///-----mise à jour du choix du type d'ouverture / fermeture-----
-bool HorlogeDS3232::choixTypeOuvertureFermeture(bool choixOuvertureFermeture, const byte alarme) {
-  byte adresse(0);
-  if (alarme == 1)  adresse = 0x14; else adresse = 0x15; // 0x14 alarm1 / 0x15 alarm2
-  if (choixOuvertureFermeture)  choixOuvertureFermeture = false; else choixOuvertureFermeture = true; // o lumiere, 1 horloge
-  RTC.alarmInterrupt(alarme, choixOuvertureFermeture); // alarme : activation 1 / desactivation 0
-  i2c_eeprom_write_byte( adresse, choixOuvertureFermeture); // écriture du type d'ouverture/ fermeture @14 ou 15 de l'eeprom de la carte rtc (i2c @ 0x57)
-  return choixOuvertureFermeture;
 }
 
 //-----accesseur - getter-----

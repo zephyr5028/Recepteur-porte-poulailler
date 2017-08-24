@@ -151,31 +151,6 @@ void LcdDigoleI2C::affichageVoltage( float voltage, String texte, byte ligne)
   cursorPosition(0, 0, (char *)"");// decalage, ligne, texte
 }
 
-///-----affichage choix ouverture fermeture-----
-void LcdDigoleI2C::affichageChoix( bool ouverture, bool fermeture,  byte ligne)
-{
-  m_ligne = ligne;
-  String chaineLigne = "";
-  chaineLigne += " ouv:";
-  if (ouverture)  chaineLigne += "hre "; else  chaineLigne += "lum ";
-  chaineLigne += "fer:";
-  if (fermeture)  chaineLigne += "hre "; else  chaineLigne += "lum ";
-  affichageUneLigne(chaineLigne);// affichage sur lcd
-}
-
-///-----affichage pulse et roue codeuse du servo-------
-void LcdDigoleI2C::affichageServo(int pulse, int roueCodeuse,  byte ligne)
-{
-  m_ligne = ligne;
-  String chaineLigne = "";
-  chaineLigne += pulse;
-   chaineLigne += "ms   ";
-  chaineLigne += roueCodeuse;
-    chaineLigne += "pas";
-  affichageUneLigne(chaineLigne);// affichage sur lcd
-  cursorPosition(0, 0, (char *)""); // decalage, ligne, texte
-}
-
 ///-----affichage au demarrage sur les deux lignes-----
 void LcdDigoleI2C::bonjour(String chaine1, String chaine2) {
   gestionCurseur (false);

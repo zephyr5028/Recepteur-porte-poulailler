@@ -36,11 +36,8 @@ class LcdDigoleI2C  : public DigoleSerialDisp  {
     void resetPos(byte ligne);//reset display position and clean the line
     void affichageDateHeure(String jourSemaine, byte jourHeure, byte moisMinute,  byte anneeSeconde);//affichage de la date ou de l'heure
     String transformation (String chaine, byte dateHeure); // transformation donnees date et heure
-
     void affichageLumFinCourse( int lum,  byte ligne, String texte, bool siNonReglable = 0); //affichage lumiere et fin de course
     void affichageVoltage( float voltage, String texte,  byte ligne); //affichage tensions
-    void affichageChoix( bool ouverture, bool fermeture,  byte ligne);//affichage choix ouverture fermeture
-    void affichageServo(int pulse, int compteRoueCodeuse,  byte ligne) ; //affichage pulse et roue codeuse du servo
     void razLcd(); //remise à zero du lcd
     void bonjour(String chaine1, String chaine2); //affichage au demarrage
     void cursorPosition(byte decalage, byte ligne, char *texte); // position du curseur
