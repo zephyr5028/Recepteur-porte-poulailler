@@ -50,7 +50,7 @@ PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools and power
 
 
 /** definitions */
-#define V_REFERENCE 5.05 // tension de reference
+#define V_REFERENCE 5.14 // tension de reference
 #define MAX_CAD 1023  // maximum du convertisseur analogique digital
 
 /** Accus */
