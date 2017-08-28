@@ -158,11 +158,12 @@ File monFichier;
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
 const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
-const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;" ;// petits textes
+const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
 //////////////////////
 const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
 /////////////////////
 
+#include "AA_fonctions.h"
 
 /* clavier */
 ///-----lecture clavier------
@@ -220,7 +221,8 @@ void displayDate() {
   if ( boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     // affichage du jour de la semaine
-    char semaine[4] = "";
+    char semaine[4];
+    tools.clearChaine (semaine, 4);
     byte j = ((tm.Wday - 1) * 3);
     for (byte i = j; i < j + 3; i++) {
       semaine[i - j] = pgm_read_byte(listeDayWeek + i);
@@ -234,7 +236,8 @@ void displayTime () {
   if ( boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     // texte = H
-    char texte[2] = "";
+    char texte[2];
+    tools.clearChaine (texte, 2);
     texte[0] = pgm_read_byte(affichageTexte + 3 );
     mydisp.affichageDateHeure(texte, tm.Hour, tm.Minute, tm.Second);
   }
@@ -248,7 +251,8 @@ void affiLightMeter () {
     byte ligne = 1;
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     // texte = " lux"
-    char texte[5] = "";
+    char texte[5];
+    tools.clearChaine (texte, 5);
     for (byte i = 4; i < 8; i++) {
       texte[i - 4] = pgm_read_byte(affichageTexte +  i);
     }
@@ -258,23 +262,30 @@ void affiLightMeter () {
 
 ///-----routine lecture d'un message en plusieurs morceaux-----
 void morceaux16caracteres (byte debut) {
-  char texteAffiLCD[16] = {};
+ // char texteAffiLCD[16];
+ // tools.clearChaine (texteAffiLCD, 16);
   mydisp.cursorPosition(0, 1); // decalage, ligne
   for ( byte i = debut ; i <  debut + 16; i++) {
-    if (message[i] == ';')  texteAffiLCD[i - debut] = ' ' ; else texteAffiLCD[i - debut] = message[i];
+   // if (message[i] == ';')  texteAffiLCD[i - debut] = ' ' ; else texteAffiLCD[i - debut] = message[i];
+   char texteAffiLCD;
+   if (message[i] == ';')  texteAffiLCD = ' ' ; else texteAffiLCD = message[i];
+    mydisp.print(texteAffiLCD);
   }
-  mydisp.affichageUneLigne(texteAffiLCD);
+  //mydisp.affichageUneLigne(texteAffiLCD);
 }
 
-///-----affiRecepteur-----
+///-----affichage Recepteur-----
 void affiRecepteur() {
   if ( boitierOuvert) { // si le boitier est ouvert
     mydisp.cursorPosition(12, 0); // decalage, ligne
-    char numBoitierAffiLCD[4] = {};
+    //char numBoitierAffiLCD[4];
+    //tools.clearChaine (numBoitierAffiLCD, 4);
     for (byte i = 0; i < 4; i++) {
-      numBoitierAffiLCD[i] = message[i];
+     // numBoitierAffiLCD[i] = message[i];
+      char numBoitierAffiLCD = message[i];
+      mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
     }
-    mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
+    //mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
 
     if (incrementation == menuRecepteur_0) {
       byte debut = 5;
@@ -313,7 +324,8 @@ void affiTensionBatCdes() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
-    char texte[2] = "";
+    char texte[2] ;
+    tools.clearChaine (texte, 2);
     texte[0] = pgm_read_byte(affichageTexte + 2 );
     mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
@@ -326,13 +338,12 @@ void affiTensionBatServo() {
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
-    char texte[2] = "";
+    char texte[2];
+    tools.clearChaine (texte, 2);
     texte[0] = pgm_read_byte(affichageTexte + 2 );
     mydisp.affichageVoltage(  voltage, texte,  ligne);
   }
 }
-
-
 
 /* reglage de la date */
 ///----routine reglage jour semaine, jour, mois, annee-----
@@ -395,16 +406,17 @@ void reglageTime () {
 /* temperature */
 ///-----routine lecture température sur ds3231 rtc type celsius=true ,fahrenheit=false------
 void read_temp(const boolean typeTemperature) {
-  float t = rtc.calculTemperature (typeTemperature);//valeur de la temperature en fonction du type
+  float temp = rtc.calculTemperature (typeTemperature);//valeur de la temperature en fonction du type
   if ( boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = C ou F
-    char texte[2] = "";
-    texte[0] = pgm_read_byte(affichageTexte );
+    char texte[2];
+    tools.clearChaine (texte, 2);
+    // texte[0] = pgm_read_byte(affichageTexte );
     // String texte = "";
     // if (typeTemperature) texte = "C"; else texte = "F";
     if (typeTemperature) texte[0] = pgm_read_byte(affichageTexte ); else texte[0] = pgm_read_byte(affichageTexte + 1 );
-    mydisp.affichageVoltage(t, texte, ligne);
+    mydisp.affichageVoltage(temp, texte, ligne);
   }
 }
 
@@ -439,7 +451,6 @@ void routineInterruptionBp() {
   }
 }
 
-
 ///-----test ouverture boitier-----
 void routineTestOuvertureBoitier()  {
   if ( clav.testBoitierOuvert( interruptOuvBoi, boitierOuvert)) {
@@ -469,7 +480,8 @@ void lumiere() {
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     // texte = " lux"
-    char texte[5] = "";
+    char texte[5];
+    tools.clearChaine (texte, 5);
     for (byte i = 4; i < 8; i++) {
       texte[i - 4] = pgm_read_byte(affichageTexte +  i);
     }
@@ -477,20 +489,20 @@ void lumiere() {
   }
 }
 
-///-----clear chaine caracteres----
-void clearChaine (char* chaine, size_t nb) {
+/*
+  ///-----clear chaine caracteres----
+  void clearChaine (char* chaine, size_t nb) {
   size_t i;//L'opérateur sizeof de C et de C++ est de type std::size_t. Cet opérateur est très efficace du fait qu'il est évalué à la compilation et ne coûte donc rien à l'exécution.
   for (i = 0; i < nb; i++) {
     chaine[i] = 0;
   }
-}
-
-///-----routine affichage avec PROGMEM------
-String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
+  }*/
+/*
+  ///-----routine affichage avec PROGMEM------
+  String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
   String chaine = "";
-  //char texte[nbCaracteres + 1] = "";
   char texte[nbCaracteres + 1];
-  clearChaine (texte, nbCaracteres + 1);
+  tools.clearChaine (texte, nbCaracteres + 1);
   byte i = iDepart;
   for (i; i <  iDepart + nbCaracteres ; i++) {
     texte[i - iDepart] = pgm_read_byte(donnees + i);
@@ -498,7 +510,8 @@ String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
   chaine += texte;
   chaine += "\0";
   return  chaine;
-}
+  }
+*/
 
 ///-----routine reception message-----
 void routineReceptionMessage (int lux, float temp) {
@@ -508,24 +521,24 @@ void routineReceptionMessage (int lux, float temp) {
     if (myRXB6.reception(message, taille_message)) {
       if (Serial) {
         Serial.println("");
-        Serial.print(affTexteProgmem(affNumBoitier, 0, 6));
+        Serial.print(tools.affTexteProgmem(affNumBoitier, 0, 6));
         Serial.print(temp);//valeur de la temperature
         // texte = " C;"
-        Serial.print(affTexteProgmem(affichageTexte, 9, 2));
+        Serial.print(tools.affTexteProgmem(affichageTexte, 9, 2));
         Serial.print(accusN1.tensionAccus());
         // texte = "V;"
-        Serial.print(affTexteProgmem(affichageTexte, 11, 2));
+        Serial.print(tools.affTexteProgmem(affichageTexte, 11, 2));
         Serial.print(accusN2.tensionAccus());
         // texte = "V;"
-        Serial.print(affTexteProgmem(affichageTexte, 11, 2));
+        Serial.print(tools.affTexteProgmem(affichageTexte, 11, 2));
         Serial.print(lum.tensionLuminosite());
         // texte = "L;"
-        Serial.print(affTexteProgmem(affichageTexte, 13, 2));
+        Serial.print(tools.affTexteProgmem(affichageTexte, 13, 2));
         Serial.print(lux);
         // texte = "l;"
-        Serial.print(affTexteProgmem(affichageTexte, 15, 2));
+        Serial.print(tools.affTexteProgmem(affichageTexte, 15, 2));
         if (batterieFaible) { // affichage si la batterie est faible
-          Serial.print(affTexteProgmem(affichageBatterieFaible, 0, 25));
+          Serial.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
         }
         Serial.println("");
       }
@@ -541,32 +554,33 @@ void routineReceptionMessage (int lux, float temp) {
           monFichier.print((char*) message);
           monFichier.println("");
           // numero de serie du boitier recepteur "N00x;"
-          monFichier.print(affTexteProgmem(affNumBoitier, 0, 6));
+          monFichier.print(tools.affTexteProgmem(affNumBoitier, 0, 6));
           //monFichier.print((char*)numeroSerieBoitier);
           monFichier.print(temp);//valeur de la temperature
           // texte = " C;"
-          monFichier.print(affTexteProgmem(affichageTexte, 9, 2));
+          monFichier.print(tools.affTexteProgmem(affichageTexte, 9, 2));
           monFichier.print(accusN1.tensionAccus());
           // texte = "V;"
-          monFichier.print(affTexteProgmem(affichageTexte, 11, 2));
+          monFichier.print(tools.affTexteProgmem(affichageTexte, 11, 2));
           monFichier.print(accusN2.tensionAccus());
           // texte = "V;"
-          monFichier.print(affTexteProgmem(affichageTexte, 11, 2));
+          monFichier.print(tools.affTexteProgmem(affichageTexte, 11, 2));
           monFichier.print(lum.tensionLuminosite());
           // texte = "L;"
-          monFichier.print(affTexteProgmem(affichageTexte, 13, 2));
+          monFichier.print(tools.affTexteProgmem(affichageTexte, 13, 2));
           monFichier.print(lux);
           // texte = "l;"
-          monFichier.print(affTexteProgmem(affichageTexte, 15, 2));
+          monFichier.print(tools.affTexteProgmem(affichageTexte, 15, 2));
           if (batterieFaible) { // affichage si la batterie est faible
-            monFichier.print(affTexteProgmem(affichageBatterieFaible, 0, 25));
+            monFichier.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
           }
           monFichier.println("");
           monFichier.close(); // fermer le fichier
         } else {
           // si le fichier ne s'est pas ouvert :
           if (Serial) {
-            Serial.println("Err fi");
+            // texte = "Err fi"
+            Serial.println(tools.affTexteProgmem(affichageTexte, 25, 6));
           }
         }
       }
@@ -585,8 +599,8 @@ void deroulementMenu (byte increment) {
     byte j = ((increment - 1) * (colonnes + 1)); // tous les 16 caractères
     mydisp.cursorPosition(0, 0); // decalage, ligne
     for (byte i = j; i < j + colonnes; i++) { // boucle pour afficher 16 caractères sur le lcd
-      char temp = pgm_read_byte(affichageMenu + i); // utilisation du texte présent en mèmoire flash
-      mydisp.print(temp);// valable pour digoleSerial et liquidCrystal
+    char   texteMenu = pgm_read_byte(affichageMenu + i); // utilisation du texte présent en mèmoire flash
+      mydisp.print(texteMenu);// valable pour digoleSerial et liquidCrystal
     }
     switch (increment) { // test de la valeur de incrementation pour affichage des parametres
       case menuDate: // Date
@@ -654,16 +668,18 @@ void routineGestionWatchdog() {
 
 ///-----routine affichage au demarrage-----
 void affichageDemarrage (byte colonne) {
-  char temp[16] = {0};
-  char temp1[16] = {0};
+  char chaine[16];
+  tools.clearChaine (chaine, 16);
+  char chaine_1[16];
+  tools.clearChaine (chaine_1, 16);
   for (byte i = colonne; i < 16 + colonne; i++) { // boucle pour afficher 16 caractères sur le lcd
-    temp[i - colonne] = pgm_read_byte(affichageBonjour + i); // utilisation du texte présent en mèmoire flash
+    chaine[i - colonne] = pgm_read_byte(affichageBonjour + i); // utilisation du texte présent en mèmoire flash
   }
   colonne += 17;
   for (byte i = colonne; i < 16 + colonne; i++) { // boucle pour afficher 16 caractères sur le lcd
-    temp1[i - colonne] = pgm_read_byte(affichageBonjour + i); // utilisation du texte présent en mèmoire flash
+    chaine_1[i - colonne] = pgm_read_byte(affichageBonjour + i); // utilisation du texte présent en mèmoire flash
   }
-  mydisp.bonjour(temp, temp1); // affichage version sur les deux lignes
+  mydisp.bonjour(chaine, chaine_1); // affichage version sur les deux lignes
 }
 
 /* setup */
@@ -737,12 +753,14 @@ void setup() {
 
   if (!SD.begin(chipSelect)) {
     if (Serial) {
-      Serial.println("Err sd");
+      // texte = "Err SD"
+      Serial.println(tools.affTexteProgmem(affichageTexte, 19, 6));
     }
     sdCard = false;
   } else {
     if (Serial) {
-      Serial.println("ok");
+      // texte = "ok"
+      Serial.println(tools.affTexteProgmem(affichageTexte, 17, 2));
     }
     sdCard = true;
   }

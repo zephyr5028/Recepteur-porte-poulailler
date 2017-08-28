@@ -88,4 +88,26 @@ void PowerTools::fonctionnementBuzzer (unsigned int compteur, int temps) {
   }
 }
 
+///-----clear chaine caracteres----
+void PowerTools::clearChaine (char* chaine, size_t nb) {
+  size_t i;//L'opérateur sizeof de C et de C++ est de type std::size_t. Cet opérateur est très efficace du fait qu'il est évalué à la compilation et ne coûte donc rien à l'exécution.
+  for (i = 0; i < nb; i++) {
+    chaine[i] = 0;
+  }
+}
+
+///-----routine affichage avec PROGMEM------
+String PowerTools::affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
+  String chaine = "";
+  char texte[nbCaracteres + 1];
+  clearChaine (texte, nbCaracteres + 1);
+  byte i = iDepart;
+  for (i; i <  iDepart + nbCaracteres ; i++) {
+    texte[i - iDepart] = pgm_read_byte(donnees + i);
+  }
+  chaine += texte;
+  chaine += "\0";
+  return  chaine;
+}
+
 

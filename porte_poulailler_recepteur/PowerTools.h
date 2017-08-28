@@ -31,6 +31,8 @@ class PowerTools
     byte tailleChaine (char *chaine);//taille d'une chaine de caractères
     void setupBuzzer(int temps); //initialisation du buzzer
     void fonctionnementBuzzer(unsigned int compteur, int temps); //fonctionnement du buzzer en fonction du parametre compteurWatchdogLumiere
+    void clearChaine (char* chaine, size_t nb); // clear chaine caracteres
+    String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) ;// routine affichage avec PROGMEM
 
 
   protected:
