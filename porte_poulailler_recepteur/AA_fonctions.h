@@ -7,6 +7,8 @@
 #ifndef AA_fonctions_h
 #define AA_fonctions_h
 
+
+
 /* clavier */
 //-----lecture clavier------
 void  lectureClavier();

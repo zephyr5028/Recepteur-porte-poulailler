@@ -9,9 +9,14 @@ Clavier::Clavier() : Bouton(), m_oldKey (-1), m_MenuManuel(14), m_NumKeys(6),
 {
 
 }
+/* sucharge du constructeur  */
+Clavier::Clavier(const byte pinClavier, const int debounce) : Bouton(), m_oldKey (-1), m_MenuManuel(14), m_NumKeys(6),
+  m_AdcKeyVal {  50, 200, 400, 600, 800 }
+{
+
+}
 /* sucharge du constructeur avec le nombre de lignes du menu */
-Clavier::Clavier(byte nbMenu, const byte pinBp, const byte pinBoitier, const int debounce, boolean debug) :
-  Bouton(  pinBp, pinBoitier,  debounce,  debug ),
+Clavier::Clavier(const byte pinClavier, const int debounce, boolean debug, byte nbMenu) :  Bouton( pinClavier,  debounce,  debug),
   m_oldKey (-1), m_MenuManuel(nbMenu), m_debug(debug), m_NumKeys(6), m_AdcKeyVal { 50, 220, 420, 620, 820 }
 {
 

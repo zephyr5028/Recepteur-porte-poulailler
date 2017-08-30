@@ -92,7 +92,7 @@ void PowerTools::fonctionnementBuzzer (unsigned int compteur, int temps) {
 void PowerTools::clearChaine (char* chaine, size_t nb) {
   size_t i;//L'opérateur sizeof de C et de C++ est de type std::size_t. Cet opérateur est très efficace du fait qu'il est évalué à la compilation et ne coûte donc rien à l'exécution.
   for (i = 0; i < nb; i++) {
-    chaine[i] = 0;
+    chaine[i] = 0;// 0 ou '\0'
   }
 }
 

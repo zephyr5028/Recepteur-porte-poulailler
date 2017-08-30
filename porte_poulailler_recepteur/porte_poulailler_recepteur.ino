@@ -8,11 +8,12 @@
     \juillet 2017
 */
 /**
-    recpeteur_enregistreur_porte-poulailler : affichage + clavier + rtc + capteur de lumière + lecteur de carte sd + recpeteur radio 433mhz
+    recepteur_enregistreur_porte-poulailler : affichage + clavier + rtc + capteur de lumière + lecteur de carte sd + recpeteur radio 433mhz
 */
 
 /**
   - 23 07 2017 installation du programme
+  - 30 08 2017 en utilisation
 */
 /*
            nom macro  valeur de la macro                                forme syntaxique
@@ -22,6 +23,8 @@
            __TIME__  l'heure de la compilation                         chaîne
            __STDC__  1 si le compilateur est ISO, 0 sinon              entier
 */
+
+#include "AA_fonctions.h" //prtotypes defines et structures
 
 /*--------------------------------------------------------------------------------*/
 /// choisir entre un afficheur lcd I2C de type Digole (PICF182) ou de type LiquidCrystal (PCF8574)
@@ -36,18 +39,31 @@
 #include <Flash.h>
 #include <avr/pgmspace.h> // non nécessaire maintenant
 
+/** progmem  mémoire flash */
+/** Numero de serie du boitier */
+/*********************/
+const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
+/*********************/
+const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
+const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
+const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
+const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
+const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
 
 /** power and tools */
 /** watchdog - Optimisation de la consommation */
 #include "PowerTools.h"
-#define DEBUG false // positionner debug 
-unsigned int memoireLibre = 0; // variable pour calcul de la memoire libre
-volatile int f_wdt = 1; // flag watchdog
-boolean reglage = false; // menu=false ou reglage=true
+#define DEBUG false // positionner debug
 #define BUZZER false // positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
 #define BUZZER_PIN 7 // broche du buzzer
 PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools and power
-
+/** structure pour les variables globales */
+typedef struct  PowerAndTools {
+  unsigned int g_memoireLibre = 0; // variable pour calcul de la memoire libre
+  volatile int g_flag_wdt = 1; // flag watchdog
+  boolean g_reglage = false; // menu=false ou reglage=true
+} PowerAndTools;
+PowerAndTools outils;
 
 /** definitions */
 #define V_REFERENCE 5.14 // tension de reference
@@ -79,101 +95,114 @@ LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG); // objet BH150
 
 
 /** interruptions */
-volatile boolean interruptBp = false; // etat interruption entree 9
-//volatile boolean interruptRTC = false; // etat interruption entree 5
-volatile boolean interruptOuvBoi = false; // etat interruption entree 6
+/** structure pour les variables globales */
+typedef struct  Interruptions {
+  volatile boolean g_interruptBp = false; // etat interruption entree 9
+  volatile boolean g_interruptOuvBoi = false; // etat interruption entree 6
+  //volatile boolean g_interruptRTC = false; // etat interruption entree 5
+} Interruptions;
+Interruptions interrupt;
 
-/** Clavier */
-/* menus */
+/** menus */
+#define MENU_DATE 1
+#define MENU_HEURE 2
+#define MENU_TEMPERATURE 3
+#define MENU_LUMIERE 4
+#define MENU_LIGHTMETER 5 //mesure du circuit BH1750
+#define MENU_TENSION_BAT_N1 6  // tension batterie N1
+#define MENU_TENSION_BAT_N2 7  // tension batterie N2
+#define MENU_RECEPTEUR_0  8  // recepteur radio - 0 : 1ere partie
+#define MENU_RECEPTEUR_1  9  // recepteur radio - 1 : 2eme partie
+#define MENU_RECEPTEUR_2  10  // recepteur radio - 2 : 3eme partie
+#define MENU_RECEPTEUR_3  11  // recepteur radio - 3 : 4eme partie
+/** Clavier - boutons */
 #include "Clavier.h"
-const byte menuDate = 1;
-const byte menuHeure = 2;
-const byte menuTemperature = 3;
-const byte menuLumiere = 4;
-const byte menuLightMeter = 5; // mesure du circuit BH1750
-const byte menuTensionBatCdes = 6; // tension batterie N1
-const byte menuTensionBatServo = 7; // tension batterie N2
-const byte menuRecepteur_0 = 8; // recepteur radio
-const byte menuRecepteur_1 = 9; // recepteur radio - 1 : 2eme partie
-const byte menuRecepteur_2 = 10; // recepteur radio - 2 : 3eme partie
-const byte menuRecepteur_3 = 11; // recepteur radio - 2 : 3eme partie
-const byte lignesMenu = 11; // nombre de lignes du menu
-const byte colonnes = 16; // colonnes de l'afficheur
-const byte oldkey = -1;
-const byte sensorClavier = A1; //pin A1 pour le clavier
-const byte pinBp = 9; // pin D9 bouton poussoir ouverture / fermeture
-const byte pinBoitier = 6; //pin D6 interrupteur ouverture boitier
-const int debounce = 500; // debounce latency in ms
-byte incrementation = 0; // incrementation verticale
-boolean relache = false; // relache de la touche
-byte touche = -1; // valeur de la touche appuyee (-1 pour non appuyée)
-boolean  boitierOuvert = true; // le boitier est ouvert
-Clavier clav(lignesMenu, pinBp, pinBoitier, debounce, DEBUG ); // class Clavier avec le nombre de lignes du menu
+#define PIN_BP 9  // pin D9 bouton poussoir ouverture / fermeture
+#define PIN_BOITIER 6 //pin D6 interrupteur ouverture boitier
+#define PIN_SENSOR_CLAVIER A1 //pin A1 pour le clavier
+#define DEBOUNCE 500 // debounce latency in ms
+#define LIGNES_MENU 11 // nombre de lignes du menu
+Bouton bp(PIN_BP, DEBOUNCE, DEBUG ); // class Bouton - objet bouton poussoir
+Bouton boitier(PIN_BOITIER, DEBOUNCE, DEBUG ); // class Bouton - objet interrupteur du boitier
+Clavier clavier(PIN_SENSOR_CLAVIER, DEBOUNCE, DEBUG, LIGNES_MENU ); // class Clavier - objet clavier
+/** structure pour les variables globales */
+typedef  struct  Menus {
+  byte g_incrementation = 0; // incrementation verticale
+  boolean g_relache = false; // relache de la touche
+  byte g_touche = -1; // valeur de la touche appuyee (-1 pour non appuyée)
+  boolean  g_boitierOuvert = true; // le boitier est ouvert
+} Menus;
+Menus menu;
 
-/** LCD DigoleSerialI2C */
+/**afficheurs lcd */
+#define COLONNES 16 // colonnes de l'afficheur
+#define LIGNES 2 // lignes de l'afficheur
 #define LCD_AFFICHAGE_TEMPS_BOUCLE  1000  // temps entre deux affichages
-int temps = 0;// pour calcul dans la fonction temporisationAffichage
-bool LcdCursor = true; //curseur du lcd if true = enable
+/** structure pour les variables globales */
+typedef  struct  Affichage {
+  int g_temps = 0;// pour calcul dans la fonction temporisationAffichage
+} Affichage;
+Affichage affi;
+/** LCD DigoleSerialI2C */
 #ifdef  LCD_DIGOLE
 /// I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
 #include "LcdDigoleI2C.h"
-LcdDigoleI2C mydisp( &Wire, '\x27', colonnes, debug); // classe lcd digole i2c (lcd 2*16 caracteres)
-const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
+LcdDigoleI2C mydisp( &Wire, '\x27', COLONNES, DEBUG); // classe lcd digole i2c (lcd 2*16 caracteres)
 #endif
+/** LCD PCF8574 */
 #ifdef LCD_LIQIDCRYSTAL
 #include "LcdPCF8574.h"
 // Set the LCD address to 0x27 for a 16 chars and 2 line display pour pcf8574t / si pcf8574at alors l'adresse est 0x3f
-LcdPCF8574  mydisp(0x3f, 16, 2);
-const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Recepteur porte .Manque carte RTC";
+LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);
 #endif
 
 /** RTC_DS3231 */
 #include "HorlogeDS3232.h"
-const byte rtcINT = 5; // digital pin D5 as l'interruption du rtc - NON CABLEE
-const byte adresseBoitier24C32 = 0x57;// adresse du boitier memoire eeprom 24c32
-const byte jourSemaine = 1, jour = 2, mois = 3, annee = 4, heure = 5, minutes = 6, secondes = 7;
-//const byte alarm_1 = 1; // alarme 1
-//const byte alarm_2 = 2; // alarme 2
-const bool typeTemperature = true; // true = celsius , false = fahrenheit
+#define PIN_RTC_INT 5  // digital pin D5 as l'interruption du rtc - NON CABLEE
+#define ADRESSE_BOITIER_24C32 0x57 // adresse du boitier memoire eeprom 24c32
+#define JOUR_SEMAINE 1
+#define JOUR 2
+#define MOIS 3
+#define ANNEE 4
+#define HEURE 5
+#define MINUTES 6
+#define SECONDES 7
+#define TYPE_TEMPERATURE true // true = celsius , false = fahrenheit
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
-HorlogeDS3232 rtc(adresseBoitier24C32, rtcINT, DEBUG );
+HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT, DEBUG );
 
 /**  gestion  radio 433MHz  recepteur */
 #include "ReceiverRXB6.h"
+ReceiverRXB6 myRXB6(DEBUG); // class ReceiverRXB6
 // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
-uint8_t message[VW_MAX_MESSAGE_LEN] = "";
-uint8_t taille_message = VW_MAX_MESSAGE_LEN;
-volatile boolean receiveMessage = false ;
-ReceiverRXB6 myRXB6(DEBUG);
+/** structure pour les variables globales */
+typedef  struct  RecepteurRXB6 {
+  uint8_t g_message[VW_MAX_MESSAGE_LEN] = ""; // tableau pour le reception du message
+  uint8_t g_taille_message = VW_MAX_MESSAGE_LEN; // taille du tableau de reception du message
+  volatile boolean g_receiveMessage = false ;// pour l'interruption de reception d'un message
+} RecepteurRXB6;
+RecepteurRXB6 receiver;
 
 /** gestion carte SD */
 #include <SD.h>
-const int chipSelect = 4;
-boolean sdCard = false; //presence SD card true
-String fileName = "";
+#define CHIP_SELECT 4
 File monFichier;
-
-
-/** progmem  mémoire flash */
-const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
-const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
-const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
-const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
-//////////////////////
-const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
-/////////////////////
-
-#include "AA_fonctions.h"
+/** structure pour les variables globales */
+typedef  struct  CarteSD {
+  boolean g_sdCard = false; //presence SD card true
+  String g_fileName = "";
+} CarteSD;
+CarteSD sd;
 
 /* clavier */
 ///-----lecture clavier------
 void  lectureClavier() {
-  if (boitierOuvert) {
-    touche = clav.read_key(sensorClavier); /// read key sensor = A1
-    clav.relacheTouche(touche, relache);
-    if (clav.deplacementDansMenu(touche, relache, reglage) or touche == 4) {
-      clav.positionMenu(incrementation, touche); /// position du menu pour l'affichage
-      deroulementMenu (incrementation); /// affichage du menu
+  if (menu.g_boitierOuvert) {
+    menu.g_touche = clavier.read_key(PIN_SENSOR_CLAVIER); /// read key sensor = A1
+    clavier.relacheTouche(menu.g_touche, menu.g_relache);
+    if (clavier.deplacementDansMenu(menu.g_touche, menu.g_relache, outils.g_reglage) or menu.g_touche == 4) {
+      clavier.positionMenu(menu.g_incrementation, menu.g_touche); /// position du menu pour l'affichage
+      deroulementMenu (menu.g_incrementation); /// affichage du menu
     }
   }
 }
@@ -181,11 +210,11 @@ void  lectureClavier() {
 
 ///---- temporisation pour l'affichage: affichage du menu lorsque temps est > boucleTemps-----
 void temporisationAffichage(const int boucleTemps) {
-  if (  temps > boucleTemps and touche != -1 /*and !monServo.get_m_servoAction()*/) {
-    deroulementMenu (incrementation); // affichage du menu en fonction de incrementation
-    temps = 0;
+  if (  affi.g_temps > boucleTemps and menu.g_touche != -1 /*and !monServo.get_m_servoAction()*/) {
+    deroulementMenu (menu.g_incrementation); // affichage du menu en fonction de incrementation
+    affi.g_temps = 0;
   } else {
-    temps += 1;
+    affi.g_temps += 1;
   }
 }
 
@@ -197,20 +226,20 @@ void buildFileName() {
     sprintf(fileName, "%d%d%d.txt", tm.Day, tm.Month, tm.Year + 1970);
   */
   // nom du fichier sur la carte SD : anneemoisjour.txt
-  fileName = "";// raz du nom de fichier
-  fileName += tm.Year + 1970; // année depuis 1970
-  fileName.concat(mydisp.transformation( "", tm.Month));// print mois
-  fileName.concat(mydisp.transformation( "", tm.Day));// print Day;
-  fileName += ".txt";
+  sd.g_fileName = "";// raz du nom de fichier
+  sd.g_fileName += tm.Year + 1970; // année depuis 1970
+  sd.g_fileName.concat(mydisp.transformation( "", tm.Month));// print mois
+  sd.g_fileName.concat(mydisp.transformation( "", tm.Day));// print Day;
+  sd.g_fileName += ".txt";
 }
 
 ///----routine lecture et ecriture date and time-----
 void ecritureDateTime() {
   RTC.write(tm);
-  if (incrementation == menuHeure) {
+  if (menu.g_incrementation == MENU_HEURE) {
     displayTime(); // affichage de l'heure
   }
-  if (incrementation == menuDate) {
+  if (menu.g_incrementation == MENU_DATE) {
     displayDate(); // affichage de la date
   }
 }
@@ -218,7 +247,7 @@ void ecritureDateTime() {
 /* affichages */
 ///-----routine display Date-----
 void displayDate() {
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     // affichage du jour de la semaine
     char semaine[4];
@@ -233,7 +262,7 @@ void displayDate() {
 
 ///-----routine display Time-----
 void displayTime () {
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     RTC.read(tm); // lecture date et heure
     // texte = H
     char texte[2];
@@ -246,7 +275,7 @@ void displayTime () {
 
 ///----- affichage du circuit BH1750 Light Meter -----
 void affiLightMeter () {
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     uint16_t lux = lightMeter.readLightLevel();
     byte ligne = 1;
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
@@ -262,44 +291,35 @@ void affiLightMeter () {
 
 ///-----routine lecture d'un message en plusieurs morceaux-----
 void morceaux16caracteres (byte debut) {
- // char texteAffiLCD[16];
- // tools.clearChaine (texteAffiLCD, 16);
   mydisp.cursorPosition(0, 1); // decalage, ligne
   for ( byte i = debut ; i <  debut + 16; i++) {
-   // if (message[i] == ';')  texteAffiLCD[i - debut] = ' ' ; else texteAffiLCD[i - debut] = message[i];
-   char texteAffiLCD;
-   if (message[i] == ';')  texteAffiLCD = ' ' ; else texteAffiLCD = message[i];
+    char texteAffiLCD;
+    if (receiver.g_message[i] == ';')  texteAffiLCD = ' ' ; else texteAffiLCD = receiver.g_message[i];
     mydisp.print(texteAffiLCD);
   }
-  //mydisp.affichageUneLigne(texteAffiLCD);
 }
 
 ///-----affichage Recepteur-----
 void affiRecepteur() {
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     mydisp.cursorPosition(12, 0); // decalage, ligne
-    //char numBoitierAffiLCD[4];
-    //tools.clearChaine (numBoitierAffiLCD, 4);
     for (byte i = 0; i < 4; i++) {
-     // numBoitierAffiLCD[i] = message[i];
-      char numBoitierAffiLCD = message[i];
+      char numBoitierAffiLCD = receiver.g_message[i];
       mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
     }
-    //mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
-
-    if (incrementation == menuRecepteur_0) {
+    if (menu.g_incrementation == MENU_RECEPTEUR_0) {
       byte debut = 5;
       morceaux16caracteres (debut);
     }
-    if (incrementation == menuRecepteur_1) {
+    if (menu.g_incrementation == MENU_RECEPTEUR_1) {
       byte debut = 21;
       morceaux16caracteres (debut);
     }
-    if (incrementation == menuRecepteur_2) {
+    if (menu.g_incrementation == MENU_RECEPTEUR_2) {
       byte debut = 37;
       morceaux16caracteres (debut);
     }
-    if (incrementation == menuRecepteur_3) {
+    if (menu.g_incrementation == MENU_RECEPTEUR_3) {
       byte debut = 53;
       morceaux16caracteres (debut);
     }
@@ -309,8 +329,8 @@ void affiRecepteur() {
 /* afficheur */
 ///-----retro eclairage de l'afficheur-----
 void eclairageAfficheur() {
-  if (boitierOuvert) {
-    if (clav.testTouche5(touche, relache)) {
+  if (menu.g_boitierOuvert) {
+    if (clavier.testTouche5(menu.g_touche, menu.g_relache)) {
       mydisp.retroEclairage();// retro eclairage
     }
   }
@@ -321,7 +341,7 @@ void eclairageAfficheur() {
 void affiTensionBatCdes() {
   float voltage = accusN1.tensionAccus();// read the input on analog pin A6 : tension batterie N1
   // print out the value you read:
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
     char texte[2] ;
@@ -335,7 +355,7 @@ void affiTensionBatCdes() {
 void affiTensionBatServo() {
   float voltage = accusN2.tensionAccus();// read the input on analog pin A7 : tension batterie N2
   // print out the value you read:
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = V
     char texte[2];
@@ -348,27 +368,27 @@ void affiTensionBatServo() {
 /* reglage de la date */
 ///----routine reglage jour semaine, jour, mois, annee-----
 void reglageDate () {
-  if (boitierOuvert) {
+  if (menu.g_boitierOuvert) {
     byte deplacement = 3;
-    if (incrementation == menuDate) {
-      mydisp.cursorPositionReglages (touche, relache, reglage, 14, deplacement, 14);// position du cuseur pendant les reglages
+    if (menu.g_incrementation == MENU_DATE) {
+      mydisp.cursorPositionReglages (menu.g_touche, menu.g_relache, outils.g_reglage, 14, deplacement, 14);// position du cuseur pendant les reglages
     }
-    if ((touche == 2 or touche == 3) and incrementation == menuDate and relache == true and reglage == true) { // si appui sur les touches 2 ou 3 pour reglage des valeurs
-      relache = false;
+    if ((menu.g_touche == 2 or menu.g_touche == 3) and menu.g_incrementation == MENU_DATE and menu.g_relache == true and outils.g_reglage == true) { // si appui sur les touches 2 ou 3 pour reglage des valeurs
+      menu.g_relache = false;
       if (mydisp.get_m_decalage() == deplacement) {
-        tm.Wday = rtc.reglageHeure(touche, tm.Wday, jourSemaine);
+        tm.Wday = rtc.reglageHeure(menu.g_touche, tm.Wday, JOUR_SEMAINE);
         ecritureDateTime();
       }
       if (mydisp.get_m_decalage() == 2 * deplacement) {
-        tm.Day = rtc.reglageHeure(touche, tm.Day, jour);
+        tm.Day = rtc.reglageHeure(menu.g_touche, tm.Day, JOUR);
         ecritureDateTime();
       }
       if (mydisp.get_m_decalage() == 3 * deplacement) {
-        tm.Month = rtc.reglageHeure(touche, tm.Month, mois);
+        tm.Month = rtc.reglageHeure(menu.g_touche, tm.Month, MOIS);
         ecritureDateTime();
       }
       if (mydisp.get_m_decalage() == 4 * deplacement) {
-        tm.Year = rtc.reglageHeure(touche, tm.Year, annee);
+        tm.Year = rtc.reglageHeure(menu.g_touche, tm.Year, ANNEE);
         ecritureDateTime();
       }
     }
@@ -379,23 +399,23 @@ void reglageDate () {
 /* reglage time */
 ///-----routine reglage heure , minute , seconde-----
 void reglageTime () {
-  if (boitierOuvert) {
+  if (menu.g_boitierOuvert) {
     byte deplacement = 4;
-    if (incrementation == menuHeure) {
-      mydisp.cursorPositionReglages (touche, relache, reglage, 14, deplacement, 14);// position du cuseur pendant les reglages
+    if (menu.g_incrementation == MENU_HEURE) {
+      mydisp.cursorPositionReglages (menu.g_touche, menu.g_relache, outils.g_reglage, 14, deplacement, 14);// position du cuseur pendant les reglages
     }
-    if ((touche == 2 or touche == 3) and incrementation == menuHeure and relache == true and reglage == true ) { // si appui sur les touches 2 ou 3 pour reglage des valeurs
-      relache = false;
+    if ((menu.g_touche == 2 or menu.g_touche == 3) and menu.g_incrementation == MENU_HEURE and menu.g_relache == true and outils.g_reglage == true ) { // si appui sur les touches 2 ou 3 pour reglage des valeurs
+      menu.g_relache = false;
       if (mydisp.get_m_decalage() == deplacement) {
-        tm.Hour = rtc.reglageHeure(touche, tm.Hour, heure);
+        tm.Hour = rtc.reglageHeure(menu.g_touche, tm.Hour, HEURE);
         ecritureDateTime(); // routine écriture date and time
       }
       if (mydisp.get_m_decalage() == 2 * deplacement) {
-        tm.Minute = rtc.reglageHeure(touche, tm.Minute, minutes);
+        tm.Minute = rtc.reglageHeure(menu.g_touche, tm.Minute, MINUTES);
         ecritureDateTime();
       }
       if (mydisp.get_m_decalage() == 3 * deplacement) {
-        tm.Second = rtc.reglageHeure(touche, tm.Second, secondes);
+        tm.Second = rtc.reglageHeure(menu.g_touche, tm.Second, SECONDES);
         ecritureDateTime();
       }
     }
@@ -407,7 +427,7 @@ void reglageTime () {
 ///-----routine lecture température sur ds3231 rtc type celsius=true ,fahrenheit=false------
 void read_temp(const boolean typeTemperature) {
   float temp = rtc.calculTemperature (typeTemperature);//valeur de la temperature en fonction du type
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if ( menu.g_boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;
     // texte = C ou F
     char texte[2];
@@ -431,41 +451,41 @@ void read_temp(const boolean typeTemperature) {
 
 ///-----routine interruption D2 INT0------
 void myInterruptINT0() {
-  receiveMessage = true;
+  receiver.g_receiveMessage = true;
 }
 
 //-----routine interruption D3 INT1-----
 void myInterruptINT1() {
   // rtc.testInterruptRTC(interruptRTC);// test de l'entree 5 - interruption du rtc
-  clav.testInterruptionBp (interruptBp);// test l'it du bp
-  clav.testInterruptionBoitier (interruptOuvBoi);// test l'it de l'interrupteur du boitier
+  bp.testInterruptionBp (interrupt.g_interruptBp);// test l'it du bp
+  boitier.testInterruptionBoitier (interrupt.g_interruptOuvBoi);// test l'it de l'interrupteur du boitier
 }
 
 ///-----routine interruption Bp-----
 void routineInterruptionBp() {
-  if (interruptBp) { // test de l'appui sur bouton bp
-    if (clav.testToucheBp ()) { //debounce pour le bp
+  if (interrupt.g_interruptBp) { // test de l'appui sur bouton bp
+    if (bp.testToucheBp ()) { //debounce pour le bp
       //...
     }
-    clav.testRelacheBp(interruptBp);// test du relache du bp
+    bp.testRelacheBp(interrupt.g_interruptBp);// test du relache du bp
   }
 }
 
 ///-----test ouverture boitier-----
 void routineTestOuvertureBoitier()  {
-  if ( clav.testBoitierOuvert( interruptOuvBoi, boitierOuvert)) {
-    boitierOuvert = true; // boitier ouvert
+  if ( boitier.testBoitierOuvert(interrupt.g_interruptOuvBoi, menu.g_boitierOuvert)) {
+    menu.g_boitierOuvert = true; // boitier ouvert
     mydisp.gestionCurseur(1); // activation du curseur
-    deroulementMenu (incrementation); /// affichage du menu
+    deroulementMenu (menu.g_incrementation); /// affichage du menu
   }
 }
 
 ///-----test fermeture boitier-----
 void  routineTestFermetureBoitier() {
-  if (clav.testBoitierFerme(interruptOuvBoi, boitierOuvert)) {
+  if (boitier.testBoitierFerme(interrupt.g_interruptOuvBoi, menu.g_boitierOuvert)) {
     mydisp.razLcd(); // extinction et raz du lcd
-    boitierOuvert = false; // boitier ferme
-    interruptOuvBoi = false; // autorisation de la prise en compte de l'IT
+    menu.g_boitierOuvert = false; // boitier ferme
+    interrupt.g_interruptOuvBoi = false; // autorisation de la prise en compte de l'IT
     mydisp.choixRetroEclairage (0);// extinction retro eclairage
   }
 }
@@ -476,7 +496,7 @@ void  routineTestFermetureBoitier() {
 ///-----routine lecture et affichage de la lumière-----
 void lumiere() {
   unsigned int lumValue = lum.tensionLuminosite(); // luminosite CAD sur pin A0
-  if ( boitierOuvert) { // si le boitier est ouvert
+  if (menu.g_boitierOuvert) { // si le boitier est ouvert
     byte ligne = 1;// première ligne car non reglable
     bool nonReglable = 1; // pour afficher le curseur sur la premiere ligne car non reglable
     // texte = " lux"
@@ -489,36 +509,12 @@ void lumiere() {
   }
 }
 
-/*
-  ///-----clear chaine caracteres----
-  void clearChaine (char* chaine, size_t nb) {
-  size_t i;//L'opérateur sizeof de C et de C++ est de type std::size_t. Cet opérateur est très efficace du fait qu'il est évalué à la compilation et ne coûte donc rien à l'exécution.
-  for (i = 0; i < nb; i++) {
-    chaine[i] = 0;
-  }
-  }*/
-/*
-  ///-----routine affichage avec PROGMEM------
-  String affTexteProgmem ( const char* donnees, byte iDepart, byte nbCaracteres) {
-  String chaine = "";
-  char texte[nbCaracteres + 1];
-  tools.clearChaine (texte, nbCaracteres + 1);
-  byte i = iDepart;
-  for (i; i <  iDepart + nbCaracteres ; i++) {
-    texte[i - iDepart] = pgm_read_byte(donnees + i);
-  }
-  chaine += texte;
-  chaine += "\0";
-  return  chaine;
-  }
-*/
-
 ///-----routine reception message-----
 void routineReceptionMessage (int lux, float temp) {
-  if (receiveMessage) {
+  if (receiver.g_receiveMessage) {
     noInterrupts();
 
-    if (myRXB6.reception(message, taille_message)) {
+    if (myRXB6.reception(receiver.g_message, receiver.g_taille_message)) {
       if (Serial) {
         Serial.println("");
         Serial.print(tools.affTexteProgmem(affNumBoitier, 0, 6));
@@ -543,15 +539,15 @@ void routineReceptionMessage (int lux, float temp) {
         Serial.println("");
       }
 
-      if (sdCard) {
+      if (sd.g_sdCard) {
         // si le fichier que vous voulez ouvrir n'existe pas, il sera créé (8 caracteres maxi).
-        monFichier = SD.open(fileName, FILE_WRITE); // ouvre le fichier en mode ecriture
+        monFichier = SD.open(sd.g_fileName, FILE_WRITE); // ouvre le fichier en mode ecriture
         //monFichier = SD.open("test.txt", FILE_READ); // ouvre le fichier en mode lecture
         //monFichier = SD.open("test.txt"); // ouvre le fichier en mode lecture
 
         // vérifier si le fichier est ouvert
         if (monFichier) {
-          monFichier.print((char*) message);
+          monFichier.print((char*) receiver.g_message);
           monFichier.println("");
           // numero de serie du boitier recepteur "N00x;"
           monFichier.print(tools.affTexteProgmem(affNumBoitier, 0, 6));
@@ -585,9 +581,9 @@ void routineReceptionMessage (int lux, float temp) {
         }
       }
     }
-    receiveMessage = false;
-    message[VW_MAX_MESSAGE_LEN] = {0};
-    taille_message = VW_MAX_MESSAGE_LEN;
+    receiver.g_receiveMessage = false;
+    receiver.g_message[VW_MAX_MESSAGE_LEN] = {0};
+    receiver.g_taille_message = VW_MAX_MESSAGE_LEN;
     interrupts();
   }
 }
@@ -595,45 +591,45 @@ void routineReceptionMessage (int lux, float temp) {
 /* menu */
 ///-----routine affichage menus------
 void deroulementMenu (byte increment) {
-  if (boitierOuvert) {
-    byte j = ((increment - 1) * (colonnes + 1)); // tous les 16 caractères
+  if (menu.g_boitierOuvert) {
+    byte j = ((increment - 1) * (COLONNES + 1)); // tous les 16 caractères
     mydisp.cursorPosition(0, 0); // decalage, ligne
-    for (byte i = j; i < j + colonnes; i++) { // boucle pour afficher 16 caractères sur le lcd
-    char   texteMenu = pgm_read_byte(affichageMenu + i); // utilisation du texte présent en mèmoire flash
+    for (byte i = j; i < j + COLONNES; i++) { // boucle pour afficher 16 caractères sur le lcd
+      char   texteMenu = pgm_read_byte(affichageMenu + i); // utilisation du texte présent en mèmoire flash
       mydisp.print(texteMenu);// valable pour digoleSerial et liquidCrystal
     }
     switch (increment) { // test de la valeur de incrementation pour affichage des parametres
-      case menuDate: // Date
+      case MENU_DATE: // Date
         displayDate(); // affichage de la date
         break;
-      case menuHeure: // heure
+      case MENU_HEURE: // heure
         displayTime(); // affichage de l'heure
         break;
-      case menuTemperature: // temperature
-        read_temp(true); // read temperature celsius=true
+      case MENU_TEMPERATURE: // temperature
+        read_temp(TYPE_TEMPERATURE); // read temperature celsius=true
         break;
-      case menuLumiere: //lumiere
+      case MENU_LUMIERE: //lumiere
         lumiere(); // lecture et affichage de la lumiere
         break;
-      case menuLightMeter:  // mesure du circuit BH1750
+      case MENU_LIGHTMETER:  // mesure du circuit BH1750
         affiLightMeter(); //
         break;
-      case menuTensionBatCdes:  // tension batterie commandes
+      case MENU_TENSION_BAT_N1:  // tension batterie commandes N1
         affiTensionBatCdes(); //
         break;
-      case menuTensionBatServo:  // tension batterie servo
+      case MENU_TENSION_BAT_N2:  // tension batterie servo N2
         affiTensionBatServo(); //
         break;
-      case menuRecepteur_0:  // recepteur
+      case MENU_RECEPTEUR_0:  // recepteur - 0
         affiRecepteur(); //
         break;
-      case menuRecepteur_1:  // recepteur - 1
+      case MENU_RECEPTEUR_1:  // recepteur - 1
         affiRecepteur(); //
         break;
-      case menuRecepteur_2:  // recepteur - 2
+      case MENU_RECEPTEUR_2:  // recepteur - 2
         affiRecepteur(); //
         break;
-      case menuRecepteur_3:  // recepteur - 3
+      case MENU_RECEPTEUR_3:  // recepteur - 3
         affiRecepteur(); //
         break;
     }
@@ -643,8 +639,8 @@ void deroulementMenu (byte increment) {
 /* interruption du watchdog */
 ///----Watchdog Interrupt Service est exécité lors d'un timeout du WDT----
 ISR(WDT_vect) {
-  if (f_wdt == 0) {
-    f_wdt = 1; // flag
+  if (outils.g_flag_wdt == 0) {
+    outils.g_flag_wdt = 1; // flag
   }
 }
 
@@ -659,9 +655,9 @@ void enterSleep(void) {
 
 ///-----routine de gestion du watchdog-----
 void routineGestionWatchdog() {
-  if ((f_wdt == 1 ) and (!boitierOuvert)) { // si le boitier est ferme et watchdog=1
+  if ((outils.g_flag_wdt == 1 ) and (!menu.g_boitierOuvert)) { // si le boitier est ferme et watchdog=1
     //...
-    f_wdt = 0;
+    outils.g_flag_wdt = 0;
     enterSleep(); //Revenir en mode veille
   }
 }
@@ -701,8 +697,8 @@ void setup() {
     affichageDemarrage(colonne);
   }
 
-  incrementation = menuDate; // position du  menu au demarrage
-  deroulementMenu (incrementation); // affichage du menu
+  menu.g_incrementation = MENU_DATE; // position du  menu au demarrage
+  deroulementMenu (menu.g_incrementation); // affichage du menu
 
   /*
     LOW : l’interruption est déclenchée quand la broche concernée est LOW. Comme il s’agit d’un état et non d’un événement, l’interruption sera déclenchée tant que la broche est LOW.
@@ -751,18 +747,18 @@ void setup() {
   /// initialisation recepteur RXB6
   myRXB6.init();
 
-  if (!SD.begin(chipSelect)) {
+  if (!SD.begin(CHIP_SELECT)) {
     if (Serial) {
       // texte = "Err SD"
       Serial.println(tools.affTexteProgmem(affichageTexte, 19, 6));
     }
-    sdCard = false;
+    sd.g_sdCard = false;
   } else {
     if (Serial) {
       // texte = "ok"
       Serial.println(tools.affTexteProgmem(affichageTexte, 17, 2));
     }
-    sdCard = true;
+    sd.g_sdCard = true;
   }
 
 }
@@ -778,7 +774,7 @@ void loop() {
   reglageDate(); // reglage de la date si touche fleche droite
   eclairageAfficheur(); // retro eclairage de l'afficheur
 
-  memoireLibre = freeMemory(); // calcul de la  memoire sram libre
+  outils.g_memoireLibre = freeMemory(); // calcul de la  memoire sram libre
 
   buildFileName();
 
