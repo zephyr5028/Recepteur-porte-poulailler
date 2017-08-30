@@ -25,38 +25,22 @@
 */
 
 #include "AA_fonctions.h" //prtotypes defines et structures
-
+/** Numero de serie du boitier */
+/*--------------------------------------------------------------------------------*/
+const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
 /*--------------------------------------------------------------------------------*/
 /// choisir entre un afficheur lcd I2C de type Digole (PICF182) ou de type LiquidCrystal (PCF8574)
-
 //#define LCD_DIGOLE  // utilisation de lcd avec circuit I2C Digole - PIC16F182
-
 #define LCD_LIQIDCRYSTAL  // utilisation de lcd liquid crystal I2C - PCF8574
-
 /*--------------------------------------------------------------------------------*/
-
-/**------Bibliothèque Flash pour mise en mémoire flash de l'arduino F()--------*/
-#include <Flash.h>
-#include <avr/pgmspace.h> // non nécessaire maintenant
-
 /** progmem  mémoire flash */
-/** Numero de serie du boitier */
-/*********************/
-const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
-/*********************/
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
 const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
-
 /** power and tools */
-/** watchdog - Optimisation de la consommation */
-#include "PowerTools.h"
-#define DEBUG false // positionner debug
-#define BUZZER false // positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
-#define BUZZER_PIN 7 // broche du buzzer
-PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools and power
+PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools
 /** structure pour les variables globales */
 typedef struct  PowerAndTools {
   unsigned int g_memoireLibre = 0; // variable pour calcul de la memoire libre
@@ -64,36 +48,18 @@ typedef struct  PowerAndTools {
   boolean g_reglage = false; // menu=false ou reglage=true
 } PowerAndTools;
 PowerAndTools outils;
-
-/** definitions */
-#define V_REFERENCE 5.14 // tension de reference
-#define MAX_CAD 1023  // maximum du convertisseur analogique digital
-
 /** Accus */
-#include "Accus.h"
-#define PIN_ACCUS_N1  A6  // analog pin A6 : tension batterie N1
-#define PIN_ACCUS_N2  A7  // analog pin A7 : tension batterie N2
-#define ACCUS_TESION_MINIMALE  4.8 //valeur minimum de l'accu 4.8v
-#define ACCUS_R1 4700 // resistance  R1 du pont
-#define ACCUS_R2 10000 // resistance  R2 du pont
-#define ACCU_N1 true  // batterie N1 presente si true
-#define ACCU_N2 true // batterie N2 presente  si true
-boolean batterieFaible = false; //  batterie < ACCUS_TESION_MINIMALE = true
-Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );
-Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );
-
+Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN1
+Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN2
+/** structure pour les variables globales */
+typedef  struct  Batteries {
+  boolean g_batterieFaible = false; //  batterie < ACCUS_TESION_MINIMALE = true
+} Batteries;
+Batteries bat;
 /** lumiere */
-#include "Lumiere.h"
-#define PIN_LUMIERE A0  // analog pin A0 : luminosite
-#define LDR_R2 10000 // resistance  R2 du pont avec la LDR
-Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD, DEBUG ); // objet lumiere
-
+Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD, DEBUG ); // objet lum
 /** lumiere BH1750 **/
-#include "LumBH1750.h"
-#define BH1750_I2C_ADDRESS 0x23 // adresse du circuit I2C
-LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG); // objet BH150
-
-
+LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG); // objet lightMeter
 /** interruptions */
 /** structure pour les variables globales */
 typedef struct  Interruptions {
@@ -102,28 +68,9 @@ typedef struct  Interruptions {
   //volatile boolean g_interruptRTC = false; // etat interruption entree 5
 } Interruptions;
 Interruptions interrupt;
-
 /** menus */
-#define MENU_DATE 1
-#define MENU_HEURE 2
-#define MENU_TEMPERATURE 3
-#define MENU_LUMIERE 4
-#define MENU_LIGHTMETER 5 //mesure du circuit BH1750
-#define MENU_TENSION_BAT_N1 6  // tension batterie N1
-#define MENU_TENSION_BAT_N2 7  // tension batterie N2
-#define MENU_RECEPTEUR_0  8  // recepteur radio - 0 : 1ere partie
-#define MENU_RECEPTEUR_1  9  // recepteur radio - 1 : 2eme partie
-#define MENU_RECEPTEUR_2  10  // recepteur radio - 2 : 3eme partie
-#define MENU_RECEPTEUR_3  11  // recepteur radio - 3 : 4eme partie
-/** Clavier - boutons */
-#include "Clavier.h"
-#define PIN_BP 9  // pin D9 bouton poussoir ouverture / fermeture
-#define PIN_BOITIER 6 //pin D6 interrupteur ouverture boitier
-#define PIN_SENSOR_CLAVIER A1 //pin A1 pour le clavier
-#define DEBOUNCE 500 // debounce latency in ms
-#define LIGNES_MENU 11 // nombre de lignes du menu
-Bouton bp(PIN_BP, DEBOUNCE, DEBUG ); // class Bouton - objet bouton poussoir
-Bouton boitier(PIN_BOITIER, DEBOUNCE, DEBUG ); // class Bouton - objet interrupteur du boitier
+Bouton bp(PIN_BP, DEBOUNCE, DEBUG ); // class Bouton - objet bp
+Bouton boitier(PIN_BOITIER, DEBOUNCE, DEBUG ); // class Bouton - objet boitier
 Clavier clavier(PIN_SENSOR_CLAVIER, DEBOUNCE, DEBUG, LIGNES_MENU ); // class Clavier - objet clavier
 /** structure pour les variables globales */
 typedef  struct  Menus {
@@ -133,11 +80,7 @@ typedef  struct  Menus {
   boolean  g_boitierOuvert = true; // le boitier est ouvert
 } Menus;
 Menus menu;
-
 /**afficheurs lcd */
-#define COLONNES 16 // colonnes de l'afficheur
-#define LIGNES 2 // lignes de l'afficheur
-#define LCD_AFFICHAGE_TEMPS_BOUCLE  1000  // temps entre deux affichages
 /** structure pour les variables globales */
 typedef  struct  Affichage {
   int g_temps = 0;// pour calcul dans la fonction temporisationAffichage
@@ -147,45 +90,28 @@ Affichage affi;
 #ifdef  LCD_DIGOLE
 /// I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
 #include "LcdDigoleI2C.h"
-LcdDigoleI2C mydisp( &Wire, '\x27', COLONNES, DEBUG); // classe lcd digole i2c (lcd 2*16 caracteres)
+LcdDigoleI2C mydisp( &Wire, '\x27', COLONNES, DEBUG); // classe lcd digole i2c (lcd 2*16 caracteres) - objet mydisp
 #endif
 /** LCD PCF8574 */
 #ifdef LCD_LIQIDCRYSTAL
 #include "LcdPCF8574.h"
 // Set the LCD address to 0x27 for a 16 chars and 2 line display pour pcf8574t / si pcf8574at alors l'adresse est 0x3f
-LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);
+LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);// objet mydisp
 #endif
-
 /** RTC_DS3231 */
-#include "HorlogeDS3232.h"
-#define PIN_RTC_INT 5  // digital pin D5 as l'interruption du rtc - NON CABLEE
-#define ADRESSE_BOITIER_24C32 0x57 // adresse du boitier memoire eeprom 24c32
-#define JOUR_SEMAINE 1
-#define JOUR 2
-#define MOIS 3
-#define ANNEE 4
-#define HEURE 5
-#define MINUTES 6
-#define SECONDES 7
-#define TYPE_TEMPERATURE true // true = celsius , false = fahrenheit
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
-HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT, DEBUG );
-
+HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT, DEBUG );// objet rtc
 /**  gestion  radio 433MHz  recepteur */
-#include "ReceiverRXB6.h"
-ReceiverRXB6 myRXB6(DEBUG); // class ReceiverRXB6
-// N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
+ReceiverRXB6 myRXB6(DEBUG); // class ReceiverRXB6 - objet myRXB6
 /** structure pour les variables globales */
 typedef  struct  RecepteurRXB6 {
+  // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
   uint8_t g_message[VW_MAX_MESSAGE_LEN] = ""; // tableau pour le reception du message
   uint8_t g_taille_message = VW_MAX_MESSAGE_LEN; // taille du tableau de reception du message
   volatile boolean g_receiveMessage = false ;// pour l'interruption de reception d'un message
 } RecepteurRXB6;
 RecepteurRXB6 receiver;
-
 /** gestion carte SD */
-#include <SD.h>
-#define CHIP_SELECT 4
 File monFichier;
 /** structure pour les variables globales */
 typedef  struct  CarteSD {
@@ -533,7 +459,7 @@ void routineReceptionMessage (int lux, float temp) {
         Serial.print(lux);
         // texte = "l;"
         Serial.print(tools.affTexteProgmem(affichageTexte, 15, 2));
-        if (batterieFaible) { // affichage si la batterie est faible
+        if (bat.g_batterieFaible) { // affichage si la batterie est faible
           Serial.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
         }
         Serial.println("");
@@ -567,7 +493,7 @@ void routineReceptionMessage (int lux, float temp) {
           monFichier.print(lux);
           // texte = "l;"
           monFichier.print(tools.affTexteProgmem(affichageTexte, 15, 2));
-          if (batterieFaible) { // affichage si la batterie est faible
+          if (bat.g_batterieFaible) { // affichage si la batterie est faible
             monFichier.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
           }
           monFichier.println("");
@@ -780,11 +706,11 @@ void loop() {
 
   /// test suivant le nombre de batteries presentes
   if (ACCU_N1 and ACCU_N2) {
-    batterieFaible = accusN1.accusFaible() or accusN2.accusFaible(); // test de la tension des batteries
+    bat.g_batterieFaible = accusN1.accusFaible() or accusN2.accusFaible(); // test de la tension des batteries
   } else if (ACCU_N1) {
-    batterieFaible = accusN1.accusFaible() ;// test de la tension de la batterie N1
+    bat.g_batterieFaible = accusN1.accusFaible() ;// test de la tension de la batterie N1
   } else if (ACCU_N2) {
-    batterieFaible = accusN2.accusFaible() ;// test de la tension de la batterie N2
+    bat.g_batterieFaible = accusN2.accusFaible() ;// test de la tension de la batterie N2
   }
 
   routineTestFermetureBoitier(); // test fermeture boitier
