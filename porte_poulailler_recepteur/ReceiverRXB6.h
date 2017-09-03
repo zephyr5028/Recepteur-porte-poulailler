@@ -16,7 +16,7 @@ class ReceiverRXB6
 
     // constructeur
 
-    ReceiverRXB6(  boolean debug = false ); // constructeur avec debug
+    ReceiverRXB6(); // constructeur
     ~ReceiverRXB6(); // destructeur
 
     void init();// initialisation
@@ -27,8 +27,6 @@ class ReceiverRXB6
 
   protected:
 
-    boolean m_debug ; // pour affichage console si nécessaire
- 
 
 };
 

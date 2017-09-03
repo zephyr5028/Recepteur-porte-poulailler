@@ -5,7 +5,7 @@
 
 #include "ReceiverRXB6.h"
 
-ReceiverRXB6::ReceiverRXB6( boolean debug) : m_debug(debug)
+ReceiverRXB6::ReceiverRXB6() 
 {
 
 }

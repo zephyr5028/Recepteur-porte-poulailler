@@ -10,13 +10,8 @@
 
 #include "PowerTools.h"
 
-PowerTools::PowerTools(const byte buzzer_pin, const boolean buzzer) :  m_buzzer_pin(buzzer_pin), m_buzzer(buzzer), m_debug(false)
-{
-
-}
-
-/* sucharge du constructeur */
-PowerTools::PowerTools( const byte buzzer_pin, const boolean buzzer, const boolean debug) :   m_buzzer_pin(buzzer_pin), m_buzzer(buzzer), m_debug(debug)
+/* constructeur */
+PowerTools::PowerTools( const byte buzzer_pin, const boolean buzzer ) :   m_buzzer_pin(buzzer_pin), m_buzzer(buzzer)
 {
 
 }

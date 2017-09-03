@@ -42,7 +42,7 @@ const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
 
 /** power and tools */
-PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools
+PowerTools tools (BUZZER_PIN, BUZZER); // objet tools
 /** structure pour les variables globales */
 typedef struct  PowerAndTools {
   unsigned int g_memoireLibre = 0; // variable pour calcul de la memoire libre
@@ -52,13 +52,13 @@ typedef struct  PowerAndTools {
 PowerAndTools outils;
 
 /** Accus */
-Accus accusN1 (ACCU_N1, PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN1
-Accus accusN2 (ACCU_N2, PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN2
+Accus accusN1 (ACCU_N1, PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD);// objet accusN1
+Accus accusN2 (ACCU_N2, PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD );// objet accusN2
 
 /** lumiere */
-Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD, DEBUG ); // objet lum
+Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD); // objet lum
 /** lumiere BH1750 **/
-LumBH1750 lightMeter(BH1750_I2C_ADDRESS, DEBUG); // objet lightMeter
+LumBH1750 lightMeter(BH1750_I2C_ADDRESS); // objet lightMeter
 /** interruptions */
 /** structure pour les variables globales */
 typedef struct  Interruptions {
@@ -69,9 +69,9 @@ typedef struct  Interruptions {
 Interruptions interrupt;
 
 /** menus */
-Bouton bp(PIN_BP, DEBOUNCE, DEBUG ); // class Bouton - objet bp
-Bouton boitier(PIN_BOITIER, DEBOUNCE, DEBUG ); // class Bouton - objet boitier
-Clavier clavier(PIN_SENSOR_CLAVIER, DEBOUNCE, DEBUG, LIGNES_MENU ); // class Clavier - objet clavier
+Bouton bp(PIN_BP, DEBOUNCE); // class Bouton - objet bp
+Bouton boitier(PIN_BOITIER, DEBOUNCE); // class Bouton - objet boitier
+Clavier clavier(PIN_SENSOR_CLAVIER, DEBOUNCE, LIGNES_MENU ); // class Clavier - objet clavier
 /** structure pour les variables globales */
 typedef  struct  Menus {
   byte g_incrementation = 0; // incrementation verticale
@@ -102,10 +102,10 @@ LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);// objet mydisp
 
 /** RTC_DS3231 */
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
-HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT, DEBUG );// objet rtc
+HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT);// objet rtc
 
 /**  gestion  radio 433MHz  recepteur */
-ReceiverRXB6 myRXB6(DEBUG); // class ReceiverRXB6 - objet myRXB6
+ReceiverRXB6 myRXB6; // class ReceiverRXB6 - objet myRXB6
 /** structure pour les variables globales */
 typedef  struct  RecepteurRXB6 {
   // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
@@ -163,8 +163,7 @@ void setup() {
 
   // tools.setupBuzzer(1000); // initialisation du buzzer et test
 
-  // initialisation des accus
-  accusN1.init();
+  // initialisation des accus - initialisation commune
   accusN2.init();
 
   /// initialisation BH1750 light meter
@@ -240,6 +239,7 @@ void loop() {
 
   routineGestionWatchdog(); // routine de gestion du watchdog
 }
+
 
 /* clavier */
 ///-----lecture clavier------

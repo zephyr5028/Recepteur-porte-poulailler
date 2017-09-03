@@ -27,7 +27,7 @@ class LcdDigoleI2C  : public DigoleSerialDisp  {
 
     // constructeur  avec debug
     // I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
-    LcdDigoleI2C ( TwoWire* , char , byte taille, boolean debug = false);
+    LcdDigoleI2C ( TwoWire* , char , byte taille);
     ~LcdDigoleI2C(); // destructeur
 
     void init();// initialisation
@@ -51,7 +51,6 @@ class LcdDigoleI2C  : public DigoleSerialDisp  {
 
   protected:
 
-    const boolean m_debug ; // pour affichage console si nécessaire
     int const m_taille; // taille du tableau - 16 caractères
     byte m_decalage; // position du curseur
     byte m_ligne; // numero ligne

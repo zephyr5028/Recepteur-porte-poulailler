@@ -12,7 +12,6 @@
 #include <avr/pgmspace.h> // non nécessaire maintenant
 /** power and tools */
 #include "PowerTools.h"
-#define DEBUG false // positionner debug
 #define BUZZER false // positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
 #define BUZZER_PIN 7 // broche du buzzer
 /** definitions */

@@ -14,7 +14,7 @@ class Lumiere
   public:
 
     // constructeur avec debug
-    Lumiere( const byte lumierePin, const int R2 = 10000, const float  Vref = 5.0, const int maxCAD = 1023, boolean debug = false );
+    Lumiere( const byte lumierePin, const int R2 = 10000, const float  Vref = 5.0, const int maxCAD = 1023);
     ~Lumiere(); // destructeur
 
 
@@ -28,7 +28,6 @@ class Lumiere
     const int m_R2 ; // resistance R2 du pont
     const float  m_Vref; // tension de reference
     const int m_maxCAD; // maximum du convertisseur analogique numérique
-    const boolean m_debug ; // pour affichage console si nécessaire
 
 };
 

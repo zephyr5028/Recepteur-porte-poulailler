@@ -16,8 +16,8 @@ Clavier::Clavier(const byte pinClavier, const int debounce) : Bouton(), m_oldKey
 
 }
 /* sucharge du constructeur avec le nombre de lignes du menu */
-Clavier::Clavier(const byte pinClavier, const int debounce, boolean debug, byte nbMenu) :  Bouton( pinClavier,  debounce,  debug),
-  m_oldKey (-1), m_MenuManuel(nbMenu), m_debug(debug), m_NumKeys(6), m_AdcKeyVal { 50, 220, 420, 620, 820 }
+Clavier::Clavier(const byte pinClavier, const int debounce, byte nbMenu) :  Bouton( pinClavier,  debounce),
+  m_oldKey (-1), m_MenuManuel(nbMenu), m_NumKeys(6), m_AdcKeyVal { 50, 220, 420, 620, 820 }
 {
 
 }

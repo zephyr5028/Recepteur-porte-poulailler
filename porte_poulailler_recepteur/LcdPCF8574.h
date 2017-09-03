@@ -16,7 +16,7 @@ class LcdPCF8574  : public LiquidCrystal_I2C
 
     // constructeur  avec debug
     // I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
-    LcdPCF8574 ( char , const byte taille = 16, const byte nbLigne = 2,  boolean debug = false);
+    LcdPCF8574 ( char , const byte taille = 16, const byte nbLigne = 2);
 
     ~LcdPCF8574(); // destructeur
 
@@ -43,7 +43,6 @@ class LcdPCF8574  : public LiquidCrystal_I2C
 
   protected:
 
-    boolean m_debug ; // pour affichage console si nécessaire
     int m_taille; // taille du tableau - 16 caractères
     byte m_decalage; // position du curseur
     byte m_ligne; // numero ligne

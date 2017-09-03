@@ -18,7 +18,7 @@ class LumBH1750   : public BH1750
 
     // constructeur
 
-    LumBH1750(const byte BH1750_I2C_ADDRESS = 0x23,  boolean debug = false ); // constructeur avec debug
+    LumBH1750(const byte BH1750_I2C_ADDRESS = 0x23); // constructeur avec debug
     ~LumBH1750(); // destructeur
 
     void init(uint8_t mode);// initialisation
@@ -26,9 +26,6 @@ class LumBH1750   : public BH1750
 
 
   protected:
-
-    boolean m_debug ; // pour affichage console si nécessaire
-
 
 
 };

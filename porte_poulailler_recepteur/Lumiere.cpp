@@ -6,8 +6,8 @@
 #include "Lumiere.h"
 
 //constructeur avec debug
-Lumiere::Lumiere( const byte lumierePin, const int R2, const float  Vref, const int maxCAD, const boolean debug) :
-  m_lumierePin(lumierePin), m_R2(R2), m_Vref(Vref), m_maxCAD(maxCAD), m_debug(debug)
+Lumiere::Lumiere( const byte lumierePin, const int R2, const float  Vref, const int maxCAD) :
+  m_lumierePin(lumierePin), m_R2(R2), m_Vref(Vref), m_maxCAD(maxCAD)
 {
   
 }

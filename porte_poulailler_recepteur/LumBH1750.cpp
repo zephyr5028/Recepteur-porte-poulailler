@@ -13,7 +13,7 @@
 
 #include "LumBH1750.h"
 
-LumBH1750::LumBH1750(const byte BH1750_I2C_ADDRESS, boolean debug) : BH1750(BH1750_I2C_ADDRESS),  m_debug(debug)
+LumBH1750::LumBH1750(const byte BH1750_I2C_ADDRESS) : BH1750(BH1750_I2C_ADDRESS)
 {
 
 }

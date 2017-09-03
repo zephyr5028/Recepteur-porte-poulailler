@@ -8,7 +8,7 @@ using namespace std;
 
 //constructeur avec debug
 // I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
-LcdDigoleI2C::LcdDigoleI2C ( TwoWire*, char , byte taille, const boolean debug) : DigoleSerialDisp (&Wire, '\x27'), m_taille(taille), m_debug(debug), m_decalage(0),
+LcdDigoleI2C::LcdDigoleI2C ( TwoWire*, char , byte taille) : DigoleSerialDisp (&Wire, '\x27'), m_taille(taille), m_decalage(0),
   m_ligne(0), m_deplacement(0), m_retroEclairage(1)
 {
 }

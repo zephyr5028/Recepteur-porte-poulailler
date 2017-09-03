@@ -21,8 +21,7 @@ class PowerTools
   public:
 
     // constructeur
-    PowerTools(const byte buzzer_pin, const boolean buzzer);
-    PowerTools( const byte buzzer_pin, const boolean buzzer, const boolean debug = false ); // constructeur avec la broche du buzzzer et si present sur la carte , debug
+    PowerTools( const byte buzzer_pin, const boolean buzzer); // constructeur avec la broche du buzzzer et si present sur la carte
     ~PowerTools(); // destructeur
 
     void  setupPower();//initialisation power
@@ -37,10 +36,8 @@ class PowerTools
 
   protected:
 
-    const boolean m_debug ; // pour affichage console si nécessaire
     const byte m_buzzer_pin ; // broche du buzzer
     const boolean m_buzzer ; // presence du buzzer sur la carte : true
-
 
 };
 

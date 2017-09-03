@@ -12,8 +12,7 @@ class Bouton
   public:
 
     Bouton(); // constructeur
-    Bouton(const byte pinInter, const int debounce);// surcharge
-    Bouton( const byte pinInter, const int debounce = 50, boolean debug = false ); // surcharge du constructeur
+    Bouton( const byte pinInter, const int debounce = 50); // surcharge du constructeur
     ~Bouton(); // destructeur
 
     bool testToucheBp();  //test touche Bp
@@ -25,7 +24,6 @@ class Bouton
 
   protected:
 
-    boolean m_debug ; // pour affichage console si nécessaire
     const byte m_pinInter; // pin interrupteur ou bouton poussoir. d9 par defaut
     const int m_debounce; // debounce latency in ms (50)
     unsigned int m_tempoDebounce; // variable pour le calcul de l'anti-rebond

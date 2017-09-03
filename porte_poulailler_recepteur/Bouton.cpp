@@ -8,13 +8,9 @@ Bouton::Bouton( ) : m_pinInter(9), m_debounce(350), m_relacheBp(true), m_tempoDe
 {
 
 }
-/*surcharge avec le numero de pin */
-Bouton::Bouton( const byte pinInter, const int debounce) : m_pinInter(pinInter), m_debounce(debounce), m_relacheBp(true), m_tempoDebounce(0), m_debouncePret(false)
-{
 
-}
 /* sucharge du constructeur */
-Bouton::Bouton( const byte pinInter ,const int debounce, boolean debug) : m_debug(debug), m_pinInter(pinInter),
+Bouton::Bouton( const byte pinInter ,const int debounce) : m_pinInter(pinInter),
   m_relacheBp(true), m_debounce(debounce), m_tempoDebounce(0), m_debouncePret(false)
 {
 

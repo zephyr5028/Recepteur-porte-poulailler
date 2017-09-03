@@ -5,15 +5,15 @@
 
 #include "HorlogeDS3232.h"
 
-HorlogeDS3232::HorlogeDS3232() : DS3232RTC(), m_deviceAddress(0x57), m_rtcINT(5), m_debug(false),
+HorlogeDS3232::HorlogeDS3232() : DS3232RTC(), m_deviceAddress(0x57), m_rtcINT(5), 
   m_alarm1Hour(0), m_alarm1Minute(0), m_alarm1Second(0), m_alarm2Hour(0), m_alarm2Minute(0)
 {
 
 }
 
 /* sucharge du constructeur avec le nombre de lignes du menu */
-HorlogeDS3232::HorlogeDS3232 ( const byte adresseMemoireI2C, const byte rtcINT, const boolean debug) : DS3232RTC(),
-  m_deviceAddress(adresseMemoireI2C), m_rtcINT(rtcINT), m_debug(debug),
+HorlogeDS3232::HorlogeDS3232 ( const byte adresseMemoireI2C, const byte rtcINT) : DS3232RTC(),
+  m_deviceAddress(adresseMemoireI2C), m_rtcINT(rtcINT),
   m_alarm1Hour(0), m_alarm1Minute(0), m_alarm1Second(0), m_alarm2Hour(0), m_alarm2Minute(0)
 {
 
