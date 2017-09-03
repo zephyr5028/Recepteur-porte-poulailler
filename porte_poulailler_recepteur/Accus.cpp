@@ -6,8 +6,8 @@
 #include "Accus.h"
 
 //constructeur avec debug
-Accus::Accus(  const byte accusPin, const float tensionMiniAccus, const int R1, const int R2, const float  Vref, const int maxCAD, const boolean debug) :
-  m_accusPin(accusPin), m_tensionMiniAccus(tensionMiniAccus), m_R1(R1), m_R2(R2), m_Vref(Vref), m_maxCAD(maxCAD), m_debug(debug), m_valMinCAD(668)
+Accus::Accus(  const boolean accuPresent, const byte accusPin, const float tensionMiniAccus, const int R1, const int R2, const float  Vref, const int maxCAD, const boolean debug) :
+  m_accuPresent (accuPresent), m_accusPin(accusPin), m_tensionMiniAccus(tensionMiniAccus), m_R1(R1), m_R2(R2), m_Vref(Vref), m_maxCAD(maxCAD), m_debug(debug), m_valMinCAD(668), m_batterieFaible(false)
 {
 }
 
@@ -19,7 +19,7 @@ Accus::~Accus()
 void Accus::init () {
   //utilisation d'un pont de resistances : vout = vin * R2 / R1 + R2
   float vout = (m_tensionMiniAccus * m_R2) / (m_R1 + m_R2) ;
-  m_valMinCAD = (vout * m_maxCAD) / m_Vref ;
+  m_valMinCAD = (vout * m_maxCAD) / m_Vref ;// calcul de la valeur CAd pour la tension minimale
 }
 
 ///------- lecture tension batterie CAD-----
@@ -29,12 +29,11 @@ int Accus::lectureAccusCAD() {
 }
 
 ///-----return batterieFaible-----
-bool Accus::accusFaible() {
-  bool batterieFaible;
-  if (lectureAccusCAD() < m_valMinCAD) { /// si la batterie est faible
-    return batterieFaible = true;
+void Accus::accusFaible() {
+  if ((lectureAccusCAD() < m_valMinCAD) and m_accuPresent) { /// si la batterie est faible
+   m_batterieFaible = true; // batterie faible
   } else {
-    return batterieFaible = false;
+    m_batterieFaible = false;
   }
 }
 
@@ -46,5 +45,17 @@ float Accus::tensionAccus() {
   // vin : tension de l'accu
   return vin;
 }
+
+
+//-----accesseur - getter-----
+boolean Accus::get_m_batterieFaible() {
+  return m_batterieFaible;
+}
+
+//-----mutateur - setter-----
+void Accus::set_m_batterieFaible(boolean batterieFaible) {
+  m_batterieFaible = batterieFaible;
+}
+
 
 

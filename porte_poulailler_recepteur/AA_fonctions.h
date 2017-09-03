@@ -26,7 +26,7 @@
 #define ACCUS_R1 4700 // resistance  R1 du pont
 #define ACCUS_R2 10000 // resistance  R2 du pont
 #define ACCU_N1 true  // batterie N1 presente si true
-#define ACCU_N2 true // batterie N2 presente  si true
+#define ACCU_N2 false // batterie N2 presente si true
 /** lumiere */
 #include "Lumiere.h"
 #define PIN_LUMIERE A0  // analog pin A0 : luminosite

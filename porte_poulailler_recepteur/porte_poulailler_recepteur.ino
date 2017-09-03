@@ -25,6 +25,7 @@
 */
 
 #include "AA_fonctions.h" //prtotypes defines et structures
+
 /** Numero de serie du boitier */
 /*--------------------------------------------------------------------------------*/
 const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier recepteur
@@ -39,6 +40,7 @@ const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temper
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
 const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
+
 /** power and tools */
 PowerTools tools (BUZZER_PIN, BUZZER, DEBUG ); // objet tools
 /** structure pour les variables globales */
@@ -48,14 +50,11 @@ typedef struct  PowerAndTools {
   boolean g_reglage = false; // menu=false ou reglage=true
 } PowerAndTools;
 PowerAndTools outils;
+
 /** Accus */
-Accus accusN1 (PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN1
-Accus accusN2 (PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN2
-/** structure pour les variables globales */
-typedef  struct  Batteries {
-  boolean g_batterieFaible = false; //  batterie < ACCUS_TESION_MINIMALE = true
-} Batteries;
-Batteries bat;
+Accus accusN1 (ACCU_N1, PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN1
+Accus accusN2 (ACCU_N2, PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD, DEBUG );// objet accusN2
+
 /** lumiere */
 Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD, DEBUG ); // objet lum
 /** lumiere BH1750 **/
@@ -68,6 +67,7 @@ typedef struct  Interruptions {
   //volatile boolean g_interruptRTC = false; // etat interruption entree 5
 } Interruptions;
 Interruptions interrupt;
+
 /** menus */
 Bouton bp(PIN_BP, DEBOUNCE, DEBUG ); // class Bouton - objet bp
 Bouton boitier(PIN_BOITIER, DEBOUNCE, DEBUG ); // class Bouton - objet boitier
@@ -80,6 +80,7 @@ typedef  struct  Menus {
   boolean  g_boitierOuvert = true; // le boitier est ouvert
 } Menus;
 Menus menu;
+
 /**afficheurs lcd */
 /** structure pour les variables globales */
 typedef  struct  Affichage {
@@ -98,9 +99,11 @@ LcdDigoleI2C mydisp( &Wire, '\x27', COLONNES, DEBUG); // classe lcd digole i2c (
 // Set the LCD address to 0x27 for a 16 chars and 2 line display pour pcf8574t / si pcf8574at alors l'adresse est 0x3f
 LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);// objet mydisp
 #endif
+
 /** RTC_DS3231 */
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
 HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT, DEBUG );// objet rtc
+
 /**  gestion  radio 433MHz  recepteur */
 ReceiverRXB6 myRXB6(DEBUG); // class ReceiverRXB6 - objet myRXB6
 /** structure pour les variables globales */
@@ -111,6 +114,7 @@ typedef  struct  RecepteurRXB6 {
   volatile boolean g_receiveMessage = false ;// pour l'interruption de reception d'un message
 } RecepteurRXB6;
 RecepteurRXB6 receiver;
+
 /** gestion carte SD */
 File monFichier;
 /** structure pour les variables globales */
@@ -119,6 +123,123 @@ typedef  struct  CarteSD {
   String g_fileName = "";
 } CarteSD;
 CarteSD sd;
+
+
+/* setup */
+void setup() {
+
+  Serial.begin(9600);
+  // if (Serial) console = true; else console = false; //if serial UART to USB is connected show console O/P.
+
+  rtc.init();// initialisation de l'horloge et verification de la presence de la carte RTC / memoire 24C32
+
+  mydisp.init(); // initialisation for text LCD adapter
+
+  byte colonne = 0;
+  // affichage version au demarrage ou  defaut RTC
+  if (rtc.testPresenceCarteRTC()) {
+    affichageDemarrage (colonne);
+  } else {
+    colonne = 34;// position dans la mèmoire flash
+    affichageDemarrage(colonne);
+  }
+
+  menu.g_incrementation = MENU_DATE; // position du  menu au demarrage
+  deroulementMenu (menu.g_incrementation); // affichage du menu
+
+  /*
+    LOW : l’interruption est déclenchée quand la broche concernée est LOW. Comme il s’agit d’un état et non d’un événement, l’interruption sera déclenchée tant que la broche est LOW.
+    Par conséquent, dès que l’ISR aura terminé son exécution, elle la recommencera. Pendant ce temps, loop() ne sera pas exécuté.
+    CHANGE : l’interruption est déclenchée quand la broche concernée change d’état, c’est à dire passe de LOW à HIGH ou bien de HIGH à LOW. Il s’agit d’un événement.
+    RISING : l’interruption est déclenchée quand la broche concernée passe de LOW à HIGH. Il s’agit également d’un événement.
+    FALLING : l’interruption est déclenchée quand la broche concernée passe de HIGH à LOW. Il s’agit encore d’un événement.
+  */
+  attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
+  attachInterrupt(0, myInterruptINT0, FALLING); // validation de l'interruption sur int0 (d2)
+
+  tools.setupPower(); // initialisation power de l'arduino
+
+  tools.setup_watchdog(9); // initialisation : maxi de 8 secondes pour l'it du watchdog
+
+  // tools.setupBuzzer(1000); // initialisation du buzzer et test
+
+  // initialisation des accus
+  accusN1.init();
+  accusN2.init();
+
+  /// initialisation BH1750 light meter
+  /*
+      BH1750 had six different measurment modes. They are divided in two groups -
+      continuous and one-time measurments. In continuous mode, sensor continuously
+      measures lightness value. And in one-time mode, sensor makes only one
+      measurment, and going to Power Down mode after this.
+      Each mode, has three different precisions:
+        - Low Resolution Mode - (4 lx precision, 16ms measurment time)
+        - High Resolution Mode - (1 lx precision, 120ms measurment time)
+        - High Resolution Mode 2 - (0.5 lx precision, 120ms measurment time)
+      By default, library use Continuous High Resolution Mode, but you can set
+      any other mode, by define it to BH1750.begin() or BH1750.configure() functions.
+      [!] Remember, if you use One-Time mode, your sensor will go to Power Down mode
+      each time, when it completes measurment and you've read it.
+      Full mode list:
+        BH1750_CONTINUOUS_LOW_RES_MODE
+        BH1750_CONTINUOUS_HIGH_RES_MODE (default)
+        BH1750_CONTINUOUS_HIGH_RES_MODE_2
+        BH1750_ONE_TIME_LOW_RES_MODE
+        BH1750_ONE_TIME_HIGH_RES_MODE
+        BH1750_ONE_TIME_HIGH_RES_MODE_2
+  */
+  lightMeter.init(BH1750_CONTINUOUS_HIGH_RES_MODE);
+
+  /// initialisation recepteur RXB6
+  myRXB6.init();
+
+  if (!SD.begin(CHIP_SELECT)) {
+    if (Serial) {
+      // texte = "Err SD"
+      Serial.println(tools.affTexteProgmem(affichageTexte, 19, 6));
+    }
+    sd.g_sdCard = false;
+  } else {
+    if (Serial) {
+      // texte = "ok"
+      Serial.println(tools.affTexteProgmem(affichageTexte, 17, 2));
+    }
+    sd.g_sdCard = true;
+  }
+
+}
+
+/* loop */
+void loop() {
+
+  lectureClavier(); // lecture du clavier
+  temporisationAffichage(LCD_AFFICHAGE_TEMPS_BOUCLE) ; // temporisation pour l'affichage
+
+  /// reglages
+  reglageTime(); // reglages de l'heure, minute, seconde si touche fleche droite
+  reglageDate(); // reglage de la date si touche fleche droite
+  eclairageAfficheur(); // retro eclairage de l'afficheur
+
+  outils.g_memoireLibre = freeMemory(); // calcul de la  memoire sram libre
+
+  buildFileName();
+
+  accusN1.accusFaible(); // verification de la tension batterie N1
+  accusN2.accusFaible();// verification de la tension batterie N2
+
+  routineTestFermetureBoitier(); // test fermeture boitier
+  routineTestOuvertureBoitier();// test ouvertuer boitier
+
+  routineInterruptionBp(); // routine interruption Bp
+
+  int lux = lightMeter.readLightLevel();
+  float temp = rtc.calculTemperature (true);
+
+  routineReceptionMessage(lux, temp); // routine reception message et affichage
+
+  routineGestionWatchdog(); // routine de gestion du watchdog
+}
 
 /* clavier */
 ///-----lecture clavier------
@@ -132,7 +253,6 @@ void  lectureClavier() {
     }
   }
 }
-
 
 ///---- temporisation pour l'affichage: affichage du menu lorsque temps est > boucleTemps-----
 void temporisationAffichage(const int boucleTemps) {
@@ -459,7 +579,8 @@ void routineReceptionMessage (int lux, float temp) {
         Serial.print(lux);
         // texte = "l;"
         Serial.print(tools.affTexteProgmem(affichageTexte, 15, 2));
-        if (bat.g_batterieFaible) { // affichage si la batterie est faible
+        // if (bat.g_batterieFaible) { // affichage si la batterie est faible
+        if (accusN1.get_m_batterieFaible() or accusN2.get_m_batterieFaible()) { // affichage si la batterie est faible
           Serial.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
         }
         Serial.println("");
@@ -493,7 +614,8 @@ void routineReceptionMessage (int lux, float temp) {
           monFichier.print(lux);
           // texte = "l;"
           monFichier.print(tools.affTexteProgmem(affichageTexte, 15, 2));
-          if (bat.g_batterieFaible) { // affichage si la batterie est faible
+          // if (bat.g_batterieFaible) { // affichage si la batterie est faible
+          if (accusN1.get_m_batterieFaible() or accusN2.get_m_batterieFaible()) { // affichage si la batterie est faible
             monFichier.print(tools.affTexteProgmem(affichageBatterieFaible, 0, 25));
           }
           monFichier.println("");
@@ -603,128 +725,4 @@ void affichageDemarrage (byte colonne) {
   }
   mydisp.bonjour(chaine, chaine_1); // affichage version sur les deux lignes
 }
-
-/* setup */
-void setup() {
-
-  Serial.begin(9600);
-  // if (Serial) console = true; else console = false; //if serial UART to USB is connected show console O/P.
-
-  rtc.init();// initialisation de l'horloge et verification de la presence de la carte RTC / memoire 24C32
-
-  mydisp.init(); // initialisation for text LCD adapter
-
-  byte colonne = 0;
-  // affichage version au demarrage ou  defaut RTC
-  if (rtc.testPresenceCarteRTC()) {
-    affichageDemarrage (colonne);
-  } else {
-    colonne = 34;// position dans la mèmoire flash
-    affichageDemarrage(colonne);
-  }
-
-  menu.g_incrementation = MENU_DATE; // position du  menu au demarrage
-  deroulementMenu (menu.g_incrementation); // affichage du menu
-
-  /*
-    LOW : l’interruption est déclenchée quand la broche concernée est LOW. Comme il s’agit d’un état et non d’un événement, l’interruption sera déclenchée tant que la broche est LOW.
-    Par conséquent, dès que l’ISR aura terminé son exécution, elle la recommencera. Pendant ce temps, loop() ne sera pas exécuté.
-    CHANGE : l’interruption est déclenchée quand la broche concernée change d’état, c’est à dire passe de LOW à HIGH ou bien de HIGH à LOW. Il s’agit d’un événement.
-    RISING : l’interruption est déclenchée quand la broche concernée passe de LOW à HIGH. Il s’agit également d’un événement.
-    FALLING : l’interruption est déclenchée quand la broche concernée passe de HIGH à LOW. Il s’agit encore d’un événement.
-  */
-  attachInterrupt(1, myInterruptINT1, FALLING); // validation de l'interruption sur int1 (d3)
-  attachInterrupt(0, myInterruptINT0, FALLING); // validation de l'interruption sur int0 (d2)
-
-  tools.setupPower(); // initialisation power de l'arduino
-
-  tools.setup_watchdog(9); // initialisation : maxi de 8 secondes pour l'it du watchdog
-
-  // tools.setupBuzzer(1000); // initialisation du buzzer et test
-
-  // initialisation des accus
-  accusN1.init();
-  accusN2.init();
-
-  /// initialisation BH1750 light meter
-  /*
-      BH1750 had six different measurment modes. They are divided in two groups -
-      continuous and one-time measurments. In continuous mode, sensor continuously
-      measures lightness value. And in one-time mode, sensor makes only one
-      measurment, and going to Power Down mode after this.
-      Each mode, has three different precisions:
-        - Low Resolution Mode - (4 lx precision, 16ms measurment time)
-        - High Resolution Mode - (1 lx precision, 120ms measurment time)
-        - High Resolution Mode 2 - (0.5 lx precision, 120ms measurment time)
-      By default, library use Continuous High Resolution Mode, but you can set
-      any other mode, by define it to BH1750.begin() or BH1750.configure() functions.
-      [!] Remember, if you use One-Time mode, your sensor will go to Power Down mode
-      each time, when it completes measurment and you've read it.
-      Full mode list:
-        BH1750_CONTINUOUS_LOW_RES_MODE
-        BH1750_CONTINUOUS_HIGH_RES_MODE (default)
-        BH1750_CONTINUOUS_HIGH_RES_MODE_2
-        BH1750_ONE_TIME_LOW_RES_MODE
-        BH1750_ONE_TIME_HIGH_RES_MODE
-        BH1750_ONE_TIME_HIGH_RES_MODE_2
-  */
-  lightMeter.init(BH1750_CONTINUOUS_HIGH_RES_MODE);
-
-  /// initialisation recepteur RXB6
-  myRXB6.init();
-
-  if (!SD.begin(CHIP_SELECT)) {
-    if (Serial) {
-      // texte = "Err SD"
-      Serial.println(tools.affTexteProgmem(affichageTexte, 19, 6));
-    }
-    sd.g_sdCard = false;
-  } else {
-    if (Serial) {
-      // texte = "ok"
-      Serial.println(tools.affTexteProgmem(affichageTexte, 17, 2));
-    }
-    sd.g_sdCard = true;
-  }
-
-}
-
-/* loop */
-void loop() {
-
-  lectureClavier(); // lecture du clavier
-  temporisationAffichage(LCD_AFFICHAGE_TEMPS_BOUCLE) ; // temporisation pour l'affichage
-
-  /// reglages
-  reglageTime(); // reglages de l'heure, minute, seconde si touche fleche droite
-  reglageDate(); // reglage de la date si touche fleche droite
-  eclairageAfficheur(); // retro eclairage de l'afficheur
-
-  outils.g_memoireLibre = freeMemory(); // calcul de la  memoire sram libre
-
-  buildFileName();
-
-  /// test suivant le nombre de batteries presentes
-  if (ACCU_N1 and ACCU_N2) {
-    bat.g_batterieFaible = accusN1.accusFaible() or accusN2.accusFaible(); // test de la tension des batteries
-  } else if (ACCU_N1) {
-    bat.g_batterieFaible = accusN1.accusFaible() ;// test de la tension de la batterie N1
-  } else if (ACCU_N2) {
-    bat.g_batterieFaible = accusN2.accusFaible() ;// test de la tension de la batterie N2
-  }
-
-  routineTestFermetureBoitier(); // test fermeture boitier
-  routineTestOuvertureBoitier();// test ouvertuer boitier
-
-  routineInterruptionBp(); // routine interruption Bp
-
-  int lux = lightMeter.readLightLevel();
-  float temp = rtc.calculTemperature (true);
-
-  routineReceptionMessage(lux, temp); // routine reception message et affichage
-
-  routineGestionWatchdog(); // routine de gestion du watchdog
-}
-
-
 
