@@ -1,6 +1,6 @@
 /**@file*/
 /**
-    \recepteur radio et enregistreur pour la porte du poulailler  Ver 1.0.0
+    \recepteur radio et enregistreur pour la porte du poulailler  Ver 1.0.1
     \file porte_poulailler_recepteur
     \brief recepteur enregistreur des informations envoyés par la(les) porte de poulailler
     \details Electronique avec microcontroleur, alimentée par batteries, couplées à un capteur solaire si utilisation extérieure. Capteur de lumière pour l'étalonnage des boitiers de porte.
@@ -14,6 +14,7 @@
 /**
   - 23 07 2017 installation du programme
   - 30 08 2017 en utilisation
+  - 03 09 2017 classe accus remodelee
 */
 /*
            nom macro  valeur de la macro                                forme syntaxique
@@ -38,55 +39,33 @@ const char affNumBoitier[] PROGMEM = "N005;"; // numero de serie du boitier rece
 const char listeDayWeek[] PROGMEM = "DimLunMarMerJeuVenSam"; // day of week en mémoire flash
 const char affichageMenu[] PROGMEM = "      Date      .      Heure     .  Temperature   .  Lumiere LDR   .   Light Meter  . Tension bat N1 . Tension bat N2 .Recepteur_0     .Recepteur_1     .Recepteur_2     .Recepteur_3     ";
 const char affichageBatterieFaible[] PROGMEM = "*** Batterie faible ! ***";
-const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.0  .Porte Poulailler.Manque carte RTC";
+const char affichageBonjour[] PROGMEM = "Recepteur porte . Version 1.0.1  .Porte Poulailler.Manque carte RTC";
 const char affichageTexte[] PROGMEM = "CFVH lux C;V;L;l;okErr SDErr fi" ;// petits textes
 
 /** power and tools */
-PowerTools tools (BUZZER_PIN, BUZZER); // objet tools
-/** structure pour les variables globales */
-typedef struct  PowerAndTools {
-  unsigned int g_memoireLibre = 0; // variable pour calcul de la memoire libre
-  volatile int g_flag_wdt = 1; // flag watchdog
-  boolean g_reglage = false; // menu=false ou reglage=true
-} PowerAndTools;
-PowerAndTools outils;
+PowerTools tools (BUZZER_PIN, BUZZER); // Class PowerTools - objet tools
+StructPowerAndTools outils;// structure
 
 /** Accus */
 Accus accusN1 (ACCU_N1, PIN_ACCUS_N1, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD);// objet accusN1
 Accus accusN2 (ACCU_N2, PIN_ACCUS_N2, ACCUS_TESION_MINIMALE, ACCUS_R1, ACCUS_R2, V_REFERENCE, MAX_CAD );// objet accusN2
 
 /** lumiere */
-Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD); // objet lum
+Lumiere lum(PIN_LUMIERE, LDR_R2, V_REFERENCE, MAX_CAD); // Classe Lumiere  -  objet lum
 /** lumiere BH1750 **/
-LumBH1750 lightMeter(BH1750_I2C_ADDRESS); // objet lightMeter
+LumBH1750 lightMeter(BH1750_I2C_ADDRESS); // Classe LumBH1750  -  objet lightMeter
+
 /** interruptions */
-/** structure pour les variables globales */
-typedef struct  Interruptions {
-  volatile boolean g_interruptBp = false; // etat interruption entree 9
-  volatile boolean g_interruptOuvBoi = false; // etat interruption entree 6
-  //volatile boolean g_interruptRTC = false; // etat interruption entree 5
-} Interruptions;
-Interruptions interrupt;
+StructInterruptions interrupt;// structure
 
 /** menus */
 Bouton bp(PIN_BP, DEBOUNCE); // class Bouton - objet bp
 Bouton boitier(PIN_BOITIER, DEBOUNCE); // class Bouton - objet boitier
 Clavier clavier(PIN_SENSOR_CLAVIER, DEBOUNCE, LIGNES_MENU ); // class Clavier - objet clavier
-/** structure pour les variables globales */
-typedef  struct  Menus {
-  byte g_incrementation = 0; // incrementation verticale
-  boolean g_relache = false; // relache de la touche
-  byte g_touche = -1; // valeur de la touche appuyee (-1 pour non appuyée)
-  boolean  g_boitierOuvert = true; // le boitier est ouvert
-} Menus;
-Menus menu;
+StructMenus menu; // structure
 
 /**afficheurs lcd */
-/** structure pour les variables globales */
-typedef  struct  Affichage {
-  int g_temps = 0;// pour calcul dans la fonction temporisationAffichage
-} Affichage;
-Affichage affi;
+StructAffichage affi; // structure
 /** LCD DigoleSerialI2C */
 #ifdef  LCD_DIGOLE
 /// I2C:Arduino UNO: SDA (data line) is on analog input pin 4, and SCL (clock line) is on analog input pin 5 on UNO and Duemilanove
@@ -97,39 +76,26 @@ LcdDigoleI2C mydisp( &Wire, '\x27', COLONNES, DEBUG); // classe lcd digole i2c (
 #ifdef LCD_LIQIDCRYSTAL
 #include "LcdPCF8574.h"
 // Set the LCD address to 0x27 for a 16 chars and 2 line display pour pcf8574t / si pcf8574at alors l'adresse est 0x3f
-LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);// objet mydisp
+LcdPCF8574  mydisp(0x3f, COLONNES, LIGNES);// Classe LcdPCF8574  -  objet mydisp
 #endif
 
 /** RTC_DS3231 */
 tmElements_t tm; // declaration de tm pour la lecture des informations date et heure
-HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT);// objet rtc
+HorlogeDS3232 rtc(ADRESSE_BOITIER_24C32, PIN_RTC_INT);// Classe HorlogeDS3232  -  objet rtc
 
 /**  gestion  radio 433MHz  recepteur */
 ReceiverRXB6 myRXB6; // class ReceiverRXB6 - objet myRXB6
-/** structure pour les variables globales */
-typedef  struct  RecepteurRXB6 {
-  // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
-  uint8_t g_message[VW_MAX_MESSAGE_LEN] = ""; // tableau pour le reception du message
-  uint8_t g_taille_message = VW_MAX_MESSAGE_LEN; // taille du tableau de reception du message
-  volatile boolean g_receiveMessage = false ;// pour l'interruption de reception d'un message
-} RecepteurRXB6;
-RecepteurRXB6 receiver;
+StructRecepteurRXB6 receiver; // structure
 
 /** gestion carte SD */
 File monFichier;
-/** structure pour les variables globales */
-typedef  struct  CarteSD {
-  boolean g_sdCard = false; //presence SD card true
-  String g_fileName = "";
-} CarteSD;
-CarteSD sd;
+StructCarteSD sd;// structure
 
 
 /* setup */
 void setup() {
 
   Serial.begin(9600);
-  // if (Serial) console = true; else console = false; //if serial UART to USB is connected show console O/P.
 
   rtc.init();// initialisation de l'horloge et verification de la presence de la carte RTC / memoire 24C32
 
@@ -228,12 +194,12 @@ void loop() {
   accusN2.accusFaible();// verification de la tension batterie N2
 
   routineTestFermetureBoitier(); // test fermeture boitier
-  routineTestOuvertureBoitier();// test ouvertuer boitier
+  routineTestOuvertureBoitier();// test ouverture boitier
 
   routineInterruptionBp(); // routine interruption Bp
 
   int lux = lightMeter.readLightLevel();
-  float temp = rtc.calculTemperature (true);
+  float temp = rtc.calculTemperature (TYPE_TEMPERATURE);
 
   routineReceptionMessage(lux, temp); // routine reception message et affichage
 
@@ -339,10 +305,15 @@ void affiLightMeter () {
 void morceaux16caracteres (byte debut) {
   mydisp.cursorPosition(0, 1); // decalage, ligne
   for ( byte i = debut ; i <  debut + 16; i++) {
-    char texteAffiLCD;
-    if (receiver.g_message[i] == ';')  texteAffiLCD = ' ' ; else texteAffiLCD = receiver.g_message[i];
-    mydisp.print(texteAffiLCD);
+    testAndAffichage(i);// test et affichage du caractere
   }
+}
+
+///-----test et affichage-----
+void testAndAffichage (byte positionDansTableau) {
+  char caractere;
+  if (receiver.g_message[positionDansTableau] == ';' or receiver.g_message[positionDansTableau] == '\0')  caractere = ' ' ; else caractere = receiver.g_message[positionDansTableau];
+  mydisp.print(caractere);// valable pour digoleSerial et liquidCrystal
 }
 
 ///-----affichage Recepteur-----
@@ -350,8 +321,7 @@ void affiRecepteur() {
   if (menu.g_boitierOuvert) { // si le boitier est ouvert
     mydisp.cursorPosition(12, 0); // decalage, ligne
     for (byte i = 0; i < 4; i++) {
-      char numBoitierAffiLCD = receiver.g_message[i];
-      mydisp.print(numBoitierAffiLCD);// valable pour digoleSerial et liquidCrystal
+      testAndAffichage(i); // test et affichage du caractere
     }
     if (menu.g_incrementation == MENU_RECEPTEUR_0) {
       byte debut = 5;

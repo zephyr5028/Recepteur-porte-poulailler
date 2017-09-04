@@ -10,13 +10,22 @@
 /**------Bibliothèque Flash pour mise en mémoire flash de l'arduino F()--------*/
 #include <Flash.h>
 #include <avr/pgmspace.h> // non nécessaire maintenant
+
 /** power and tools */
 #include "PowerTools.h"
 #define BUZZER false // positionner BUZZER en fonction de la presence ou pas d'un buzzer sur la carte (true = presence)
 #define BUZZER_PIN 7 // broche du buzzer
+/** structure pour les variables globales */
+typedef struct  StructPowerAndTools {
+  unsigned int g_memoireLibre = 0; // variable pour calcul de la memoire libre
+  volatile int g_flag_wdt = 1; // flag watchdog
+  boolean g_reglage = false; // menu=false ou reglage=true
+} StructPowerAndTools;
+
 /** definitions */
 #define V_REFERENCE 5.14 // tension de reference
 #define MAX_CAD 1023  // maximum du convertisseur analogique digital
+
 /** Accus */
 #include "Accus.h"
 #define PIN_ACCUS_N1  A6  // analog pin A6 : tension batterie N1
@@ -26,13 +35,23 @@
 #define ACCUS_R2 10000 // resistance  R2 du pont
 #define ACCU_N1 true  // batterie N1 presente si true
 #define ACCU_N2 false // batterie N2 presente si true
+
 /** lumiere */
 #include "Lumiere.h"
 #define PIN_LUMIERE A0  // analog pin A0 : luminosite
 #define LDR_R2 10000 // resistance  R2 du pont avec la LDR
-/** lumiere BH1750 **/
+/** lumiere BH1750 */
 #include "LumBH1750.h"
 #define BH1750_I2C_ADDRESS 0x23 // adresse du circuit I2C
+
+/** interruptions */
+/** structure pour les variables globales */
+typedef struct  StructInterruptions {
+  volatile boolean g_interruptBp = false; // etat interruption entree 9
+  volatile boolean g_interruptOuvBoi = false; // etat interruption entree 6
+  //volatile boolean g_interruptRTC = false; // etat interruption entree 5
+} StructInterruptions;
+
 /** menus */
 #define MENU_DATE 1 // date
 #define MENU_HEURE 2 // heure 
@@ -45,6 +64,14 @@
 #define MENU_RECEPTEUR_1  9  // recepteur radio - 1 : 2eme partie
 #define MENU_RECEPTEUR_2  10  // recepteur radio - 2 : 3eme partie
 #define MENU_RECEPTEUR_3  11  // recepteur radio - 3 : 4eme partie
+/** structure pour les variables globales */
+typedef  struct  StructMenus {
+  byte g_incrementation = 0; // incrementation verticale
+  boolean g_relache = false; // relache de la touche
+  byte g_touche = -1; // valeur de la touche appuyee (-1 pour non appuyée)
+  boolean  g_boitierOuvert = true; // le boitier est ouvert
+} StructMenus;
+
 /** Clavier - boutons */
 #include "Clavier.h"
 #define PIN_BP 9  // pin D9 bouton poussoir ouverture / fermeture
@@ -52,10 +79,16 @@
 #define PIN_SENSOR_CLAVIER A1 //pin A1 pour le clavier
 #define DEBOUNCE 500 // debounce latency in ms
 #define LIGNES_MENU 11 // nombre de lignes du menu
+
 /**afficheurs lcd */
 #define COLONNES 16 // colonnes de l'afficheur
 #define LIGNES 2 // lignes de l'afficheur
 #define LCD_AFFICHAGE_TEMPS_BOUCLE  1000  // temps entre deux affichages
+/** structure pour les variables globales */
+typedef  struct  StructAffichage {
+  int g_temps = 0;// pour calcul dans la fonction temporisationAffichage
+} StructAffichage;
+
 /** RTC_DS3231 */
 #include "HorlogeDS3232.h"
 #define PIN_RTC_INT 5  // digital pin D5,  interruption du rtc......NON CABLEE
@@ -68,11 +101,25 @@
 #define MINUTES 6
 #define SECONDES 7
 #define TYPE_TEMPERATURE true // true = celsius , false = fahrenheit
+
 /**  gestion  radio 433MHz  recepteur */
 #include "ReceiverRXB6.h"
+/** structure pour les variables globales */
+typedef  struct  StructRecepteurRXB6 {
+  // N.B. La constante VW_MAX_MESSAGE_LEN est fournie par la lib VirtualWire
+  uint8_t g_message[VW_MAX_MESSAGE_LEN] = ""; // tableau pour le reception du message
+  uint8_t g_taille_message = VW_MAX_MESSAGE_LEN; // taille du tableau de reception du message
+  volatile boolean g_receiveMessage = false ;// pour l'interruption de reception d'un message
+} StructRecepteurRXB6;
+
 /** gestion carte SD */
 #include <SD.h>
 #define CHIP_SELECT 4 // chip select de la carte sd
+/** structure pour les variables globales */
+typedef  struct  StructCarteSD {
+  boolean g_sdCard = false; //presence SD card true
+  String g_fileName = "";
+} StructCarteSD;
 
 /* clavier */
 //-----lecture clavier------
@@ -99,6 +146,9 @@ void affiLightMeter ();
 
 ///-----routine lecture d'un message en plusieurs morceaux-----
 void morceaux16caracteres (byte debut);
+
+///-----test et affichage-----
+void testAndAffichage (byte positionDansTableau);
 
 ///-----affichage Recepteur-----
 void affiRecepteur();
